@@ -8,7 +8,10 @@ import '../assignment_tab/ui/dashboard_screen.dart';
 import '../home_tab/screens/settings/settings_screen.dart';
 import '../widgets/chatbot_widget.dart';
 import '../providers/firebase_auth_provider.dart';
+import '../providers/locale_provider.dart';
 import '../home_tab/screens/providers/theme_provider.dart';
+import '../config/api_keys.dart';
+import '../providers/chatbot_provider.dart';
 
 /// ─────────────────────────────────────────────────────────────────
 ///  STUDENT PORTAL SHELL
@@ -26,13 +29,22 @@ class _StudentShellState extends State<StudentShell>
     with SingleTickerProviderStateMixin {
   int _index = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize chatbot with API key
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatbotProvider>().initialize(ApiKeys.geminiApiKey);
+    });
+  }
+
   static const _navItems = [
-    _NavItem(icon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.school_rounded, label: 'Courses'),
-    _NavItem(icon: Icons.quiz_rounded, label: 'Quizzes'),
-    _NavItem(icon: Icons.assignment_rounded, label: 'Tasks'),
-    _NavItem(icon: Icons.person_rounded, label: 'Profile'),
-    _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
+    _NavItem(icon: Icons.home_rounded, label: 'nav_home'),
+    _NavItem(icon: Icons.school_rounded, label: 'nav_courses'),
+    _NavItem(icon: Icons.quiz_rounded, label: 'nav_quizzes'),
+    _NavItem(icon: Icons.assignment_rounded, label: 'nav_tasks'),
+    _NavItem(icon: Icons.person_rounded, label: 'nav_profile'),
+    _NavItem(icon: Icons.settings_rounded, label: 'nav_settings'),
   ];
 
   @override
@@ -64,7 +76,9 @@ class _StudentShellState extends State<StudentShell>
           // Tab body fills entire screen (behind chatbot)
           pages[_index],
           // Persistent floating AI assistant
-          const ChatbotWidget(),
+          const Positioned.fill(
+            child: ChatbotWidget(),
+          ),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(isDark),
@@ -73,7 +87,15 @@ class _StudentShellState extends State<StudentShell>
 
   // ── APP BAR ──────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar(bool isDark, ThemeProvider themeProvider) {
-    const titles = ['Home', 'Courses', 'Quizzes', 'Tasks', 'Profile', 'Settings'];
+    final localeProvider = context.watch<LocaleProvider>();
+    final titles = [
+      localeProvider.t('nav_home'),
+      localeProvider.t('nav_courses'),
+      localeProvider.t('nav_quizzes'),
+      localeProvider.t('nav_tasks'),
+      localeProvider.t('nav_profile'),
+      localeProvider.t('nav_settings'),
+    ];
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF13132A) : Colors.white,
       elevation: 0,
@@ -249,7 +271,7 @@ class _HoverNavButtonState extends State<_HoverNavButton>
               if (selected) ...[
                 const SizedBox(width: 6),
                 Text(
-                  widget.item.label,
+                  context.read<LocaleProvider>().t(widget.item.label),
                   style: const TextStyle(
                     color: primary,
                     fontSize: 13,

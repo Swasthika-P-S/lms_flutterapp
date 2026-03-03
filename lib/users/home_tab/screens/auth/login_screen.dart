@@ -44,9 +44,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success && mounted) {
       setState(() => _isLoading = false);
+      
+      String errorMsg = firebaseAuthProvider.errorMessage ?? localeProvider.t('login_failed');
+      // Refined error messaging as requested
+      if (errorMsg.contains('user-not-found') || errorMsg.contains('wrong-password') || errorMsg.contains('Incorrect password')) {
+        errorMsg = localeProvider.t('incorrect_login');
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(firebaseAuthProvider.errorMessage ?? 'Login failed'),
+          content: Text(errorMsg),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -206,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             
                             // Title
                             Text(
-                              'Learning Management System',
+                              localeProvider.t('learning_management_system'),
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
@@ -216,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Learn, Practice, and Excel',
+                              localeProvider.t('learn_practice_excel'),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: isDark ? Colors.grey[400] : const Color(0xFF4B5563),
@@ -268,12 +275,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Email Field
                             _buildInputField(
                               controller: _emailController,
-                              label: 'Email Address',
+                              label: localeProvider.t('email_address'),
                               icon: Icons.email_outlined,
                               isDark: isDark,
                               keyboardType: TextInputType.emailAddress,
                               validator: (v) => v == null || !v.contains('@')
-                                  ? 'Enter a valid email'
+                                  ? localeProvider.t('enter_valid_email')
                                   : null,
                             ),
                             const SizedBox(height: 20),
@@ -281,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Password Field
                             _buildInputField(
                               controller: _passwordController,
-                              label: 'Password',
+                              label: localeProvider.t('password_label'),
                               icon: Icons.lock_outline,
                               isDark: isDark,
                               obscureText: _obscurePassword,
@@ -299,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               ),
                               validator: (v) =>
-                                  v == null || v.length < 6 ? 'Minimum 6 characters' : null,
+                                  v == null || v.length < 6 ? localeProvider.t('min_6_chars') : null,
                             ),
                             const SizedBox(height: 32),
                             
@@ -334,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   child: Text(
-                                    'Sign Up',
+                                    localeProvider.t('sign_up'),
                                     style: TextStyle(
                                       color: AppTheme.primaryPurple,
                                       fontSize: 15,
@@ -437,7 +444,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Icon(Icons.login, color: Colors.white, size: 24),
               ),
         label: Text(
-          _isLoading ? 'Signing in...' : 'Continue with Google',
+          _isLoading ? localeProvider.t('signing_in') : localeProvider.t('continue_with_google'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -496,9 +503,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   strokeWidth: 2.5,
                 ),
               )
-            : const Text(
-                'Login with Email',
-                style: TextStyle(
+            : Text(
+                localeProvider.t('login_with_email'),
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

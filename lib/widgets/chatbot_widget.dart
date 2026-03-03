@@ -82,7 +82,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
         if (_isExpanded)
           Positioned(
             right: 16,
-            bottom: 80,
+            bottom: 180, // Moved up to stay above the button
             child: ScaleTransition(
               scale: _scaleAnimation,
               alignment: Alignment.bottomRight,
@@ -93,7 +93,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
         // Floating action button
         Positioned(
           right: 16,
-          bottom: 16,
+          bottom: 110, // Moved up to clear the bottom nav bar (80px)
           child: _buildFloatingButton(isDarkMode),
         ),
       ],
@@ -107,24 +107,13 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.accent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Icon(
-          _isExpanded ? Icons.close : Icons.chat_bubble_outline,
+          _isExpanded ? Icons.close_rounded : Icons.smart_toy_rounded,
           color: Colors.white,
-          size: 24,
+          size: 28,
         ),
       ),
     );
@@ -164,13 +153,9 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   Widget _buildHeader(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.accent],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.only(
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
         ),
@@ -419,10 +404,15 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.accent],
-              ),
+              color: AppColors.primary,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white),

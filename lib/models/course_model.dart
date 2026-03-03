@@ -99,20 +99,23 @@ class Topic {
   final String name;
   final String description;
   final int problemCount;
+  final int totalQuestions;
   
   Topic({
     required this.id,
     required this.name,
     required this.description,
     this.problemCount = 0,
+    this.totalQuestions = 0,
   });
   
   factory Topic.fromMap(Map<String, dynamic> data) {
     return Topic(
-      id: data['id'] ?? '',
+      id: data['id'] ?? data['_id'] ?? '',
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       problemCount: data['problemCount'] ?? 0,
+      totalQuestions: data['totalQuestions'] ?? 0,
     );
   }
   

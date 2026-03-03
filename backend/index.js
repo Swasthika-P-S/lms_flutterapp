@@ -28,7 +28,28 @@ app.get('/api/courses', async (req, res) => {
 // Get topics for a course
 app.get('/api/topics/:courseId', async (req, res) => {
     try {
-        const topics = await Topic.find({ courseId: req.params.courseId }).sort({ order: 1 });
+        const topics = await Topic.aggregate([
+            { $match: { courseId: req.params.courseId } },
+            { $sort: { order: 1 } },
+            {
+                $lookup: {
+                    from: 'questions',
+                    localField: '_id',
+                    foreignField: 'topicId',
+                    as: 'questions'
+                }
+            },
+            {
+                $addFields: {
+                    totalQuestions: { $size: '$questions' }
+                }
+            },
+            {
+                $project: {
+                    questions: 0
+                }
+            }
+        ]);
         res.json(topics);
     } catch (err) {
         res.status(500).json({ error: err.message });

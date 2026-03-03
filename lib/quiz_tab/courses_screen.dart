@@ -45,7 +45,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
           'id': t.id,
           'name': t.name,
           'description': t.description,
-          'totalQuestions': 10,
+          'totalQuestions': t.totalQuestions,
           'completedQuestions': 0,
           'quizTaken': false,
         })).toList();
@@ -152,7 +152,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 20,
                       crossAxisSpacing: 20,
-                      childAspectRatio: 0.85,
+                      childAspectRatio: 0.82,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -230,6 +230,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     children: [
                       Text(
                         course.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
