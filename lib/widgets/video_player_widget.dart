@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app_tab/utils/colors.dart';
 
-/// Reusable video player widget that supports YouTube URLs using IFrame (Best for Web)
-class VideoPlayerWidget extends StatefulWidget {
+/// Reusable video player widget that supports YouTube URLs using URL Launcher (Bypasses embed restrictions)
+class VideoPlayerWidget extends StatelessWidget {
   final String videoUrl;
   final bool autoPlay;
 
@@ -14,76 +13,63 @@ class VideoPlayerWidget extends StatefulWidget {
     this.autoPlay = false,
   }) : super(key: key);
 
-  @override
-  State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
-}
-
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
-  late YoutubePlayerController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeController();
-  }
-
-  void _initializeController() {
-    final videoId = YoutubePlayerController.convertUrlToId(widget.videoUrl);
-    
-    double? startSeconds;
-    double? endSeconds;
-
+  Future<void> _launchVideo(BuildContext context) async {
+    final Uri url = Uri.parse(videoUrl);
     try {
-      final uri = Uri.tryParse(widget.videoUrl);
-      if (uri != null) {
-        if (uri.queryParameters.containsKey('start')) {
-          startSeconds = double.tryParse(uri.queryParameters['start']!);
-        }
-        if (uri.queryParameters.containsKey('end')) {
-          endSeconds = double.tryParse(uri.queryParameters['end']!);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch video URL')),
+          );
         }
       }
-    } catch (_) {}
-
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: videoId ?? '',
-      startSeconds: startSeconds,
-      endSeconds: endSeconds,
-      params: const YoutubePlayerParams(
-        mute: true,
-        showControls: true,
-        showFullscreenButton: true,
-        enableJavaScript: true,
-      ),
-    );
-    
-    debugPrint('🎬 WebView IFrame initialized with ID: $videoId from URL: ${widget.videoUrl} (start: $startSeconds, end: $endSeconds)');
-  }
-
-  @override
-  void dispose() {
-    _controller.close();
-    super.dispose();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error launching video: $e')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final videoId = YoutubePlayerController.convertUrlToId(widget.videoUrl);
-    
-    if (videoId == null) {
-      return Center(
-        child: Text(
-          'Invalid YouTube URL\n${widget.videoUrl}',
-          style: const TextStyle(color: Colors.white),
-          textAlign: TextAlign.center,
+    return Container(
+      width: double.infinity,
+      color: Colors.black,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.play_circle_fill,
+                size: 64,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _launchVideo(context),
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Watch on YouTube'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Video opens in external app because of\nYouTube embedding restrictions',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
         ),
-      );
-    }
-
-    return YoutubePlayer(
-      key: ValueKey(videoId), // Force refresh when ID changes
-      controller: _controller,
-      aspectRatio: 16 / 9,
+      ),
     );
   }
 }

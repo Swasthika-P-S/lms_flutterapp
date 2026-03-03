@@ -1,135 +1,98 @@
 import 'package:flutter/material.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../app_tab/utils/colors.dart';
 
-/// Reusable video player widget that supports YouTube URLs using the IFrame API
+/// Reusable video player widget that bypasses YouTube embedding restrictions using url_launcher
 class VideoPlayerWidget extends StatelessWidget {
-  final YoutubePlayerController controller;
-  final int startAt;
-  final int? endAt;
+  final String? videoUrl;
+  final bool autoPlay;
 
+  // We keep this to avoid breaking existing signatures if they pass unused variables,
+  // but ideally refactoring the call sites is better. We add optional named params.
   const VideoPlayerWidget({
     Key? key,
-    required this.controller,
-    this.startAt = 0,
-    this.endAt,
+    this.videoUrl,
+    this.autoPlay = false,
+    dynamic controller,
+    int? startAt,
+    int? endAt,
   }) : super(key: key);
+
+  Future<void> _launchVideo(BuildContext context) async {
+    if (videoUrl == null || videoUrl!.isEmpty) return;
+    
+    final Uri url = Uri.parse(videoUrl!);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch video URL')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error launching video: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        YoutubePlayer(
-          controller: controller,
+    if (videoUrl == null || videoUrl!.isEmpty) {
+      return Container(
+        width: double.infinity,
+        color: Colors.black,
+        child: const AspectRatio(
           aspectRatio: 16 / 9,
+          child: Center(
+            child: Text(
+              'No video available',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
         ),
-        _buildCustomControls(context),
-      ],
-    );
-  }
+      );
+    }
 
-  Widget _buildCustomControls(BuildContext context) {
-    return StreamBuilder<YoutubeVideoState>(
-      stream: controller.videoStateStream,
-      builder: (context, snapshot) {
-        final state = snapshot.data;
-        final currentPos = state?.position.inSeconds ?? 0;
-        final start = startAt;
-        
-        // If endAt is not provided, fallback to 0 (we'd need metadata stream to get total length robustly, 
-        // but since we always provide endAt for lessons, this is fine).
-        int end = endAt ?? 0;
-        final duration = end - start;
-        if (duration <= 0) return const SizedBox.shrink();
-
-        final adjustedPos = (currentPos - start).clamp(0, duration);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          color: Theme.of(context).cardColor,
-          child: Row(
+    return Container(
+      width: double.infinity,
+      color: Colors.black,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: Icon(
-                  Icons.play_arrow, // Simple toggle visual fallback since we don't have isPlaying synchronous state easily in iframe
-                  color: Theme.of(context).primaryColor,
-                ),
-                onPressed: () async {
-                  final playerState = await controller.playerState;
-                  if (playerState == PlayerState.playing) {
-                    controller.pauseVideo();
-                  } else {
-                    controller.playVideo();
-                  }
-                },
+              const Icon(
+                Icons.play_circle_fill,
+                size: 64,
+                color: AppColors.primary, // Using primary color which exists in colors.dart
               ),
-              const SizedBox(width: 8),
-              Text(
-                _formatDuration(adjustedPos),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 4.0,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
-                  ),
-                  child: Slider(
-                    value: adjustedPos.toDouble(),
-                    min: 0.0,
-                    max: duration.toDouble(),
-                    activeColor: Theme.of(context).primaryColor,
-                    inactiveColor: Colors.grey.withOpacity(0.3),
-                    onChanged: (newVal) {
-                      controller.seekTo(seconds: (start + newVal).toDouble());
-                    },
-                  ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _launchVideo(context),
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Watch on YouTube'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
                 ),
               ),
-              Text(
-                _formatDuration(duration),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              const SizedBox(height: 8),
+              const Text(
+                'Video opens in external app because of\nYouTube embedding restrictions',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  Icons.volume_up,
-                  color: Theme.of(context).iconTheme.color,
-                ),
-                onPressed: () async {
-                  final isMuted = await controller.isMuted;
-                  if (isMuted) {
-                    controller.unMute();
-                  } else {
-                    controller.mute();
-                  }
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.fullscreen,
-                  color: Theme.of(context).iconTheme.color,
-                ),
-                onPressed: () {
-                  controller.toggleFullScreen();
-                },
-              )
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
-  }
-
-  String _formatDuration(int seconds) {
-    if (seconds < 0) seconds = 0;
-    final min = seconds ~/ 60;
-    final sec = seconds % 60;
-    if (min >= 60) {
-      final hour = min ~/ 60;
-      final remainingMin = min % 60;
-      return '$hour:${remainingMin.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-    }
-    return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 }
