@@ -5,11 +5,30 @@ import 'create_assignment_screen.dart';
 import 'assignment_detail_screen.dart';
 import '../core/app_colors.dart';
 
-class AssignmentListScreen extends StatelessWidget {
+class AssignmentListScreen extends StatefulWidget {
   final String courseId;
-  final AssignmentService _service = AssignmentService();
 
-  AssignmentListScreen({super.key, required this.courseId});
+  const AssignmentListScreen({super.key, required this.courseId});
+
+  @override
+  State<AssignmentListScreen> createState() => _AssignmentListScreenState();
+}
+
+class _AssignmentListScreenState extends State<AssignmentListScreen> {
+  final AssignmentService _service = AssignmentService();
+  late Stream<List<Assignment>> _assignmentsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
+    setState(() {
+      _assignmentsStream = _service.getAssignmentsByCourse(widget.courseId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,14 +40,60 @@ class AssignmentListScreen extends StatelessWidget {
         title: const Text('Assignments'),
         backgroundColor: AppColors.getCard(context),
         foregroundColor: AppColors.getTextPrimary(context),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refresh,
+          ),
+        ],
       ),
       body: StreamBuilder<List<Assignment>>(
-        stream: _service.getAssignmentsByCourse(courseId),
+        stream: _assignmentsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(
                 color: AppColors.primary,
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading assignments',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppColors.getTextPrimary(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString().contains('TimeoutException') 
+                          ? 'Connection timed out. Please check your internet or if the server is running.'
+                          : snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.getTextSecondary(context)),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _refresh,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -79,12 +144,15 @@ class AssignmentListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CreateAssignmentScreen(courseId: courseId),
-          ),
-        ),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CreateAssignmentScreen(courseId: widget.courseId),
+            ),
+          );
+          _refresh();
+        },
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
@@ -100,12 +168,15 @@ class AssignmentListScreen extends StatelessWidget {
     final isOverdue = assignment.isOverdue;
     
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AssignmentDetailScreen(assignment: assignment),
-        ),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AssignmentDetailScreen(assignment: assignment),
+          ),
+        );
+        _refresh();
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: AppConstants.spacing),
         padding: const EdgeInsets.all(AppConstants.cardPadding),

@@ -75,9 +75,9 @@ class AssignmentService {
   }
 
   // SUBMIT
-  Future<String> submitAssignment(Submission submission, {String? filePath}) async {
+  Future<String> submitAssignment(Submission submission) async {
     try {
-      final response = await MongoService.submitAssignment(submission.toMap(), filePath: filePath);
+      final response = await MongoService.submitAssignment(submission.toMap());
       final newSub = Submission.fromMap(response, response['_id'] ?? '');
       
       // Update local cache for immediate UI feedback if still using streams

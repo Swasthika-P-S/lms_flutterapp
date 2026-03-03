@@ -18,6 +18,12 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Logger middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    next();
+});
+
 // Ensure uploads directory exists
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -38,6 +44,11 @@ const upload = multer({ storage });
 
 // Serve Static Files
 app.use('/uploads', express.static(uploadDir));
+
+// Health check
+app.get('/ping', (req, res) => {
+    res.send('pong');
+});
 
 // ── API Endpoints ──────────────────────────────────────────
 
@@ -126,15 +137,10 @@ app.put('/api/questions/:id', async (req, res) => {
 
 // ── Submission Endpoints ──
 
-// Submit an assignment (with optional file)
-app.post('/api/submissions', upload.single('file'), async (req, res) => {
+// Submit an assignment (text-only)
+app.post('/api/submissions', async (req, res) => {
     try {
-        const submissionData = req.body;
-        if (req.file) {
-            submissionData.fileName = req.file.originalname;
-            submissionData.fileUrl = `/uploads/${req.file.filename}`;
-        }
-        const submission = new Submission(submissionData);
+        const submission = new Submission(req.body);
         await submission.save();
         res.status(201).json(submission);
     } catch (err) {
@@ -354,8 +360,18 @@ const startServer = async () => {
         });
         console.log('✅ Connected to MongoDB Atlas');
 
-        app.listen(PORT, () => {
-            console.log(`🚀 Server running on http://localhost:${PORT}`);
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+        });
+
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.error(`❌ Port ${PORT} is already in use by another application.`);
+                console.error(`⚠️  Please change the PORT in backend/.env to another number (e.g., 6000, 6001).`);
+                process.exit(1);
+            } else {
+                console.error('❌ Server Error:', err);
+            }
         });
     } catch (err) {
         console.error('❌ MongoDB Connection Error:', err.message);

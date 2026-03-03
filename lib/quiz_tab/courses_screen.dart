@@ -32,15 +32,18 @@ class _CoursesScreenState extends State<CoursesScreen> {
       // 1. Fetch all CourseModels from MongoDB
       final List<base.CourseModel> courseModels = await MongoService.getCourses();
       
+      // 2. Fetch all topics for all courses in parallel
+      final List<List<base.Topic>> allTopics = await Future.wait(
+        courseModels.map((course) => MongoService.getTopics(course.id))
+      );
+      
       List<quiz.Course> dynamicCourses = [];
 
-      // 2. For each course, fetch its topics
-      for (var raw in courseModels) {
-        print('🔍 Fetching topics for course: ${raw.id} (${raw.title})');
-        final List<base.Topic> rawTopics = await MongoService.getTopics(raw.id);
-        print('✅ Fetched ${rawTopics.length} topics');
+      // 3. Map courses and topics
+      for (int i = 0; i < courseModels.length; i++) {
+        final raw = courseModels[i];
+        final rawTopics = allTopics[i];
         
-        // 3. Map base.Topic to quiz.Topic
         final List<quiz.Topic> quizTopics = rawTopics.map<quiz.Topic>((t) => quiz.Topic.fromMap({
           'id': t.id,
           'name': t.name,
@@ -50,9 +53,6 @@ class _CoursesScreenState extends State<CoursesScreen> {
           'quizTaken': false,
         })).toList();
 
-        print('📦 Mapped to ${quizTopics.length} quiz topics');
-
-        // 4. Map base.CourseModel to quiz.Course
         dynamicCourses.add(quiz.Course.fromMap({
           'courseId': raw.id,
           'title': raw.title,
