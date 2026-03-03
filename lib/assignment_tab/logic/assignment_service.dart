@@ -75,49 +75,56 @@ class AssignmentService {
   }
 
   // SUBMIT
-  Future<String> submitAssignment(Submission submission) async {
-    final id = _generateId('sub');
-    final isLate = (_assignments[submission.assignmentId]?.isOverdue ?? false);
-    final newSub = Submission(
-      id: id,
-      assignmentId: submission.assignmentId,
-      studentId: submission.studentId,
-      studentName: submission.studentName,
-      content: submission.content,
-      submittedAt: submission.submittedAt,
-      score: submission.score,
-      feedback: submission.feedback,
-      status: isLate ? 'late' : submission.status,
-    );
-    _submissions[id] = newSub;
-    _emitSubmissions();
-    _notifications.sendInApp(
-      'Submission received',
-      '${submission.studentName} submitted an assignment',
-    );
-    return id;
+  Future<String> submitAssignment(Submission submission, {String? filePath}) async {
+    try {
+      final response = await MongoService.submitAssignment(submission.toMap(), filePath: filePath);
+      final newSub = Submission.fromMap(response, response['_id'] ?? '');
+      
+      // Update local cache for immediate UI feedback if still using streams
+      _submissions[newSub.id] = newSub;
+      _emitSubmissions();
+      
+      _notifications.sendInApp(
+        'Submission received',
+        '${submission.studentName} submitted an assignment',
+      );
+      return newSub.id;
+    } catch (e) {
+      print('❌ Error in submitAssignment: $e');
+      rethrow;
+    }
   }
 
   Stream<List<Submission>> getSubmissionsByAssignment(String assignmentId) {
-    Future.microtask(_emitSubmissions);
-    return _submissionsStream.stream.map((list) {
-      final filtered = list.where((s) => s.assignmentId == assignmentId).toList();
-      filtered.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
-      return filtered;
+    return Stream.fromFuture(MongoService.getSubmissions(assignmentId)).map((list) {
+      final subs = list.map((item) => Submission.fromMap(item, item['_id'] ?? '')).toList();
+      subs.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+      return subs;
     });
   }
 
   Future<void> gradeSubmission(String submissionId, int score, String feedback) async {
-    final existing = _submissions[submissionId];
-    if (existing == null) return;
-    final graded = existing.copyWith(
-      score: score,
-      feedback: feedback,
-      status: 'graded',
-    );
-    _submissions[submissionId] = graded;
-    _emitSubmissions();
-    _notifications.sendInApp('Submission graded', '${existing.studentName} scored $score');
+    try {
+      await MongoService.gradeSubmission(submissionId, {
+        'score': score,
+        'feedback': feedback,
+        'status': 'graded',
+      });
+      
+      if (_submissions.containsKey(submissionId)) {
+        _submissions[submissionId] = _submissions[submissionId]!.copyWith(
+          score: score,
+          feedback: feedback,
+          status: 'graded',
+        );
+        _emitSubmissions();
+      }
+      
+      _notifications.sendInApp('Submission graded', 'Score: $score');
+    } catch (e) {
+      print('❌ Error in gradeSubmission: $e');
+      rethrow;
+    }
   }
 
   // DEADLINES

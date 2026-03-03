@@ -7,12 +7,37 @@ const Course = require('./models/Course');
 const Topic = require('./models/Topic');
 const Question = require('./models/Question');
 const Assignment = require('./models/Assignment');
+const Submission = require('./models/Submission');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Ensure uploads directory exists
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// Multer Storage Configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    }
+});
+
+const upload = multer({ storage });
+
+// Serve Static Files
+app.use('/uploads', express.static(uploadDir));
 
 // ── API Endpoints ──────────────────────────────────────────
 
@@ -99,6 +124,45 @@ app.put('/api/questions/:id', async (req, res) => {
     }
 });
 
+// ── Submission Endpoints ──
+
+// Submit an assignment (with optional file)
+app.post('/api/submissions', upload.single('file'), async (req, res) => {
+    try {
+        const submissionData = req.body;
+        if (req.file) {
+            submissionData.fileName = req.file.originalname;
+            submissionData.fileUrl = `/uploads/${req.file.filename}`;
+        }
+        const submission = new Submission(submissionData);
+        await submission.save();
+        res.status(201).json(submission);
+    } catch (err) {
+        console.error('❌ Submission Error:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Get submissions for an assignment
+app.get('/api/submissions/:assignmentId', async (req, res) => {
+    try {
+        const submissions = await Submission.find({ assignmentId: req.params.assignmentId }).sort({ submittedAt: -1 });
+        res.json(submissions);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Grade a submission
+app.patch('/api/submissions/:id', async (req, res) => {
+    try {
+        const submission = await Submission.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(submission);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // ── Assignment Endpoints ──
 
 // Get assignments for a course
@@ -140,6 +204,7 @@ app.post('/api/seed', async (req, res) => {
         await Topic.deleteMany({});
         await Question.deleteMany({});
         await Assignment.deleteMany({});
+        await Submission.deleteMany({});
 
         // 1. Mobile App Development
         const madCourse = await Course.create({

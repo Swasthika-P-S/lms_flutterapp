@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../data/submission.dart';
 import '../logic/assignment_service.dart';
 import '../core/app_colors.dart';
+import '../../services/mongo_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SubmissionsListScreen extends StatelessWidget {
   final String assignmentId;
@@ -150,6 +152,7 @@ class SubmissionsListScreen extends StatelessWidget {
                 children: [
                   Text(
                     sub.studentName,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.getTextPrimary(context),
                       fontSize: 16,
@@ -165,11 +168,14 @@ class SubmissionsListScreen extends StatelessWidget {
                         color: AppColors.getTextSecondary(context),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'Submitted ${DateFormat('MMM dd, HH:mm').format(sub.submittedAt)}',
-                        style: TextStyle(
-                          color: AppColors.getTextSecondary(context),
-                          fontSize: 13,
+                      Expanded(
+                        child: Text(
+                          'Submitted ${DateFormat('MMM dd, HH:mm').format(sub.submittedAt)}',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.getTextSecondary(context),
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -199,40 +205,67 @@ class SubmissionsListScreen extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (sub.fileName != null) ...[
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => _openFile(sub.fileUrl),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.attach_file, size: 14, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                sub.fileName!,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(width: 12),
             
             // Status/Score Chip
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: chipColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(statusIcon, size: 14, color: chipColor),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        sub.score != null ? '${sub.score} pts' : sub.status,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: chipColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: chipColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 14, color: chipColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    sub.score != null ? '${sub.score} pts' : sub.status,
+                    style: TextStyle(
+                      color: chipColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             
             // Chevron
             Icon(
@@ -469,5 +502,17 @@ class SubmissionsListScreen extends StatelessWidget {
 
     scoreCtrl.dispose();
     feedbackCtrl.dispose();
+  }
+
+  void _openFile(String? fileUrl) async {
+    if (fileUrl == null) return;
+    final url = Uri.parse('${MongoService.serverUrl}$fileUrl');
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      print('❌ Error launching URL: $e');
+    }
   }
 }

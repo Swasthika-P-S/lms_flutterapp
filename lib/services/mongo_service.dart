@@ -11,6 +11,8 @@ class MongoService {
       ? 'http://localhost:5000/api' 
       : 'http://10.12.252.182:5000/api';
 
+  static String get serverUrl => _baseUrl.replaceAll('/api', '');
+
   // Session-based cache for quiz results (topicId -> (questionIndex -> selectedOptionIndex))
   static final Map<String, Map<int, int>> _lastAnswersCache = {};
 
@@ -185,6 +187,80 @@ class MongoService {
       }
     } catch (e) {
       print('❌ MongoService Error (seedDatabase): $e');
+      rethrow;
+    }
+  }
+
+  /// Submit an assignment (with optional file)
+  static Future<Map<String, dynamic>> submitAssignment(Map<String, dynamic> data, {String? filePath}) async {
+    try {
+      if (filePath != null) {
+        var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/submissions'));
+        
+        // Add text fields
+        data.forEach((key, value) {
+          if (value != null) {
+            request.fields[key] = value.toString();
+          }
+        });
+
+        // Add file
+        request.files.add(await http.MultipartFile.fromPath('file', filePath));
+        
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 201) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Failed to submit assignment: ${response.body}');
+        }
+      } else {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/submissions'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(data),
+        );
+        if (response.statusCode == 201) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Failed to submit assignment: ${response.body}');
+        }
+      }
+    } catch (e) {
+      print('❌ MongoService Error (submitAssignment): $e');
+      rethrow;
+    }
+  }
+
+  /// Get submissions for an assignment
+  static Future<List<dynamic>> getSubmissions(String assignmentId) async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/submissions/$assignmentId'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load submissions');
+      }
+    } catch (e) {
+      print('❌ MongoService Error (getSubmissions): $e');
+      rethrow;
+    }
+  }
+
+  /// Grade a submission
+  static Future<void> gradeSubmission(String submissionId, Map<String, dynamic> gradeData) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/submissions/$submissionId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(gradeData),
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to grade submission: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ MongoService Error (gradeSubmission): $e');
       rethrow;
     }
   }

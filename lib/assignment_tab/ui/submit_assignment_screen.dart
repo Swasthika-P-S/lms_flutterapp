@@ -3,6 +3,8 @@ import '../data/assignment.dart';
 import '../data/submission.dart';
 import '../logic/assignment_service.dart';
 import '../core/app_colors.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 
 class SubmitAssignmentScreen extends StatefulWidget {
   final Assignment assignment;
@@ -15,6 +17,35 @@ class SubmitAssignmentScreen extends StatefulWidget {
 class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
   final _contentController = TextEditingController();
   bool _isLoading = false;
+  String? _selectedFilePath;
+  String? _selectedFileName;
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedFilePath = result.files.single.path;
+          _selectedFileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking file: $e')),
+      );
+    }
+  }
+
+  void _removeFile() {
+    setState(() {
+      _selectedFilePath = null;
+      _selectedFileName = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +297,66 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
                       textAlignVertical: TextAlignVertical.top,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  
+                  // File Attachment Section
+                  Text(
+                    'Attachments',
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_selectedFileName != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.insert_drive_file, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _selectedFileName!,
+                              style: TextStyle(
+                                color: AppColors.getTextPrimary(context),
+                                fontSize: 13,
+                                fontWeight: FontWeight.medium,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: _removeFile,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            color: AppColors.getTextSecondary(context),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _pickFile,
+                      icon: const Icon(Icons.attach_file, size: 18),
+                      label: const Text('Attach File'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -323,14 +414,14 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
   }
 
   Future<void> _submit() async {
-    if (_contentController.text.trim().isEmpty) {
+    if (_contentController.text.trim().isEmpty && _selectedFilePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
             children: [
               Icon(Icons.error_outline, color: Colors.white),
               SizedBox(width: 12),
-              Text('Please provide an answer'),
+              Text('Please provide an answer or attach a file'),
             ],
           ),
           behavior: SnackBarBehavior.floating,
@@ -348,11 +439,12 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
       studentId: 'currentStudent',
       studentName: 'Current Student',
       content: _contentController.text.trim(),
+      fileName: _selectedFileName,
       submittedAt: DateTime.now(),
       status: widget.assignment.isOverdue ? 'late' : 'submitted',
     );
 
-    await AssignmentService().submitAssignment(submission);
+    await AssignmentService().submitAssignment(submission, filePath: _selectedFilePath);
 
     if (!mounted) return;
 
