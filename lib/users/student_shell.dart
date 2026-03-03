@@ -41,6 +41,7 @@ class _StudentShellState extends State<StudentShell>
   static const _navItems = [
     _NavItem(icon: Icons.home_rounded, label: 'nav_home'),
     _NavItem(icon: Icons.school_rounded, label: 'nav_courses'),
+    _NavItem(icon: Icons.code_rounded, label: 'Coding'),
     _NavItem(icon: Icons.quiz_rounded, label: 'nav_quizzes'),
     _NavItem(icon: Icons.assignment_rounded, label: 'nav_tasks'),
     _NavItem(icon: Icons.person_rounded, label: 'nav_profile'),
@@ -59,6 +60,7 @@ class _StudentShellState extends State<StudentShell>
     final pages = [
       const StudentDashboardScreen(),
       const CourseListingScreen(),
+      const CoursesScreen(questionTypeFilter: 'coding'),
       const CoursesScreen(),
       const AssignmentCourseSelector(isAdmin: false),
       const StudentProfileScreen(),
@@ -91,6 +93,7 @@ class _StudentShellState extends State<StudentShell>
     final titles = [
       localeProvider.t('nav_home'),
       localeProvider.t('nav_courses'),
+      'Coding Challenges',
       localeProvider.t('nav_quizzes'),
       localeProvider.t('nav_tasks'),
       localeProvider.t('nav_profile'),

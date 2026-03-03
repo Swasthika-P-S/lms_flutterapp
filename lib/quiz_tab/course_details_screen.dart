@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:learnhub/quiz_tab/models.dart';
 import 'package:learnhub/quiz_tab/quiz_options_screen.dart';
+import 'package:learnhub/quiz_tab/quiz_screen.dart';
 import 'package:learnhub/home_tab/utils/theme.dart';
 
 class CourseDetailsScreen extends StatelessWidget {
   final Course course;
+  final String? questionTypeFilter;
 
-  const CourseDetailsScreen({Key? key, required this.course}) : super(key: key);
+  const CourseDetailsScreen({
+    Key? key, 
+    required this.course,
+    this.questionTypeFilter,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -148,15 +154,28 @@ class CourseDetailsScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => QuizOptionsScreen(
-                  topic: topic,
-                  course: course,
+            if (questionTypeFilter == 'coding') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizScreen(
+                    topic: topic,
+                    course: course,
+                    questionTypeFilter: 'coding',
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizOptionsScreen(
+                    topic: topic,
+                    course: course,
+                  ),
+                ),
+              );
+            }
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(

@@ -9,7 +9,8 @@ import '../../models/course_model.dart';
 ///    Course (DSA / OOPs / C++) → Topic → Questions (1 correct + 4 options)
 /// ─────────────────────────────────────────────────────────────────
 class ManageQuestionsScreen extends StatefulWidget {
-  const ManageQuestionsScreen({Key? key}) : super(key: key);
+  final String? initialType;
+  const ManageQuestionsScreen({Key? key, this.initialType}) : super(key: key);
 
   @override
   State<ManageQuestionsScreen> createState() => _ManageQuestionsScreenState();
@@ -114,11 +115,13 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
                     .toList(),
               ),
             ),
-            body: TabBarView(
               children: mappedCourses
-                  .map((c) => _CourseTopicsView(course: c, isDark: isDark))
+                  .map((c) => _CourseTopicsView(
+                    course: c, 
+                    isDark: isDark,
+                    initialType: widget.initialType,
+                  ))
                   .toList(),
-            ),
           ),
         );
       },
@@ -145,7 +148,12 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
 class _CourseTopicsView extends StatefulWidget {
   final _Course course;
   final bool isDark;
-  const _CourseTopicsView({required this.course, required this.isDark});
+  final String? initialType;
+  const _CourseTopicsView({
+    required this.course, 
+    required this.isDark,
+    this.initialType,
+  });
 
   @override
   State<_CourseTopicsView> createState() => _CourseTopicsViewState();
@@ -483,7 +491,10 @@ class _TopicQuestionsScreen extends StatefulWidget {
     required this.topicName,
     required this.accentColor,
     required this.isDark,
+    this.initialType,
   });
+
+  final String? initialType;
 
   @override
   State<_TopicQuestionsScreen> createState() => _TopicQuestionsScreenState();
@@ -690,6 +701,7 @@ class _TopicQuestionsScreenState extends State<_TopicQuestionsScreen> {
                 topicName: widget.topicName,
                 accentColor: widget.accentColor,
                 isDark: widget.isDark,
+                initialType: widget.initialType,
               ),
             ),
           );
@@ -714,7 +726,10 @@ class _AddQuestionScreen extends StatefulWidget {
     required this.topicName,
     required this.accentColor,
     required this.isDark,
+    this.initialType,
   });
+
+  final String? initialType;
 
   @override
   State<_AddQuestionScreen> createState() => _AddQuestionScreenState();
@@ -733,15 +748,13 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
   final List<Map<String, TextEditingController>> _testCaseCtrls = [];
 
   late final List<TextEditingController> _optCtrl;
-  int _correctIdx = 0;
-  String _type = 'quiz'; // 'quiz' or 'coding'
+  late String _type; // 'quiz' or 'coding'
   bool _saving = false;
-
-  static const _optionLabels = ['A', 'B', 'C', 'D'];
 
   @override
   void initState() {
     super.initState();
+    _type = widget.initialType ?? 'quiz';
     _optCtrl = List.generate(4, (_) => TextEditingController());
     _addTestCase(); // Add one empty test case by default
   }

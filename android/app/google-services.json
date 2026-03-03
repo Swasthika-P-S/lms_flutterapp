@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "253082488360",
+    "project_id": "placement-lms-a8ca5",
+    "storage_bucket": "placement-lms-a8ca5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253082488360:android:23df4a2f04d8a90793af1d",
+        "android_client_info": {
+          "package_name": "com.example.lms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "253082488360-lv93lrs6uj7n1r25v6tl0cscjse0i76u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lms",
+            "certificate_hash": "9b662eb351fb727758a37c9eac4f00ca9a3f2456"
+          }
+        },
+        {
+          "client_id": "253082488360-3v8cpsok22igklfs1d2hn41pk55bs0gt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbC312qIHVavfg2c7a2XBlTfFb2t4AOy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "253082488360-3v8cpsok22igklfs1d2hn41pk55bs0gt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

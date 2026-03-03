@@ -5,7 +5,8 @@ import 'package:learnhub/models/course_model.dart' as base;
 import 'package:learnhub/quiz_tab/course_details_screen.dart';
 
 class CoursesScreen extends StatefulWidget {
-  const CoursesScreen({Key? key}) : super(key: key);
+  final String? questionTypeFilter;
+  const CoursesScreen({Key? key, this.questionTypeFilter}) : super(key: key);
 
   @override
   State<CoursesScreen> createState() => _CoursesScreenState();
@@ -96,7 +97,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Quizzes',
+                        widget.questionTypeFilter == 'coding' ? 'Coding' : 'Quizzes',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -105,7 +106,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Select a course to test your knowledge',
+                        widget.questionTypeFilter == 'coding' 
+                          ? 'Solve programming challenges to level up'
+                          : 'Select a course to test your knowledge',
                         style: TextStyle(
                           fontSize: 16,
                           color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -175,7 +178,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CourseDetailsScreen(course: course),
+            builder: (context) => CourseDetailsScreen(
+              course: course,
+              questionTypeFilter: widget.questionTypeFilter,
+            ),
           ),
         );
       },
