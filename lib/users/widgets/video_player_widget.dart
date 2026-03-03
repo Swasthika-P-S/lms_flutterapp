@@ -23,9 +23,8 @@ class VideoPlayerWidget extends StatelessWidget {
     
     final Uri url = Uri.parse(videoUrl!);
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Could not launch video URL')),
