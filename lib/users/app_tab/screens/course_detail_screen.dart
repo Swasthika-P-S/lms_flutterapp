@@ -1,10 +1,10 @@
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:flutter/material.dart';
 import '../models/course.dart';
 import '../models/lesson.dart';
 import '../services/course_service.dart';
 import '../services/download_service.dart';
 import '../widgets/lesson_item.dart';
-import '../widgets/video_player_widget.dart';
+import '../../widgets/video_player_widget.dart';
 import '../utils/colors.dart';
 import 'content_viewer_screen.dart';
 
@@ -24,7 +24,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   bool isLoading = true;
   late Course currentCourse;
   Lesson? activeLesson;
-  late YoutubePlayerController _youtubeController;
+  // removed _youtubeController
 
   @override
   void initState() {
@@ -34,30 +34,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   void _initializePlayer() {
-    if (lessons.isEmpty) return;
-
-    final firstLessonUrl = activeLesson?.videoUrl ?? lessons.first.videoUrl;
-    final videoId = YoutubePlayer.convertUrlToId(firstLessonUrl);
-    
-    int? startAt;
-    int? endAt;
-    try {
-    final startAt = activeLesson?.videoUrl != null ? _getStartAtInitial() : 0;
-    final endAt = activeLesson?.videoUrl != null ? _getEndAtInitial() : null;
-
-    _youtubeController = YoutubePlayerController.fromVideoId(
-      videoId: videoId ?? '',
-      autoPlay: true,
-      startSeconds: startAt.toDouble(),
-      endSeconds: endAt?.toDouble(),
-      params: const YoutubePlayerParams(
-        showControls: false,
-        showFullscreenButton: false,
-        mute: false,
-        enableKeyboard: false,
-        pointerEvents: PointerEvents.none, // Prevent interacting with YouTube iframe directly
-      ),
-    );
+    // No initialization needed for URL launcher
   }
 
   int _getStartAtInitial() {
@@ -103,9 +80,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   @override
   void dispose() {
-    if (lessons.isNotEmpty) {
-       _youtubeController.dispose();
-    }
     super.dispose();
   }
 
@@ -202,9 +176,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
                                       child: VideoPlayerWidget(
-                                        controller: _youtubeController,
-                                        startAt: _getStartAt(),
-                                        endAt: _getEndAt(),
+                                        videoUrl: activeLesson?.videoUrl,
+                                        autoPlay: false,
                                       ),
                                     ),
                                   ),
@@ -226,9 +199,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       children: [
                         if (activeLesson != null) ...[
                            VideoPlayerWidget(
-                             controller: _youtubeController,
-                             startAt: _getStartAt(),
-                             endAt: _getEndAt(),
+                             videoUrl: activeLesson?.videoUrl,
+                             autoPlay: false,
                            ),
                         ],
                         _buildCourseHeader(context, isDarkMode),
@@ -397,32 +369,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 activeLesson = lesson;
               });
 
-              // Extract new start and end times to tightly scope player playback
-              int startAt = 0;
-              int? endAt;
-              try {
-                final uri = Uri.tryParse(lesson.videoUrl);
-                if (uri != null) {
-                  if (uri.queryParameters.containsKey('start')) {
-                    startAt = int.tryParse(uri.queryParameters['start']!) ?? 0;
-                  }
-                  if (uri.queryParameters.containsKey('end')) {
-                    endAt = int.tryParse(uri.queryParameters['end']!);
-                  }
-                }
-              } catch (_) {}
-
-              final targetVideoId = YoutubePlayer.convertUrlToId(lesson.videoUrl);
-
-              if (targetVideoId != null) {
-                // Force the player to load exactly the bounded segment.
-                // The IFrame will automatically stop buffering/playing when hitting `endAt`.
-                _youtubeController.loadVideoById(
-        videoId: targetVideoId, 
-        startSeconds: startAt.toDouble(), 
-        endSeconds: endAt?.toDouble(),
-      );
-              }
+              // Player updates automatically via activeLesson state rebuilding the widget
             },
             onDownload: () => _handleDownload(lesson),
           );

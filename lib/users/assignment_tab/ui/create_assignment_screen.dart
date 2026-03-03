@@ -18,6 +18,7 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
   final _descController = TextEditingController();
   final _scoreController = TextEditingController(text: '100');
   DateTime _deadline = DateTime.now().add(const Duration(days: 7));
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -183,14 +184,23 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
                 ),
                 elevation: 2,
               ),
-              onPressed: _create,
-              child: const Text(
-                'Create Assignment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: _isLoading ? null : _create,
+              child: _isLoading 
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Create Assignment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
             ),
           ],
         ),
@@ -226,18 +236,39 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
 
   Future<void> _create() async {
     if (!_formKey.currentState!.validate()) return;
-    final assignment = Assignment(
-      id: '',
-      courseId: widget.courseId,
-      title: _titleController.text,
-      description: _descController.text,
-      deadline: _deadline,
-      maxScore: int.parse(_scoreController.text),
-      createdAt: DateTime.now(),
-      createdBy: 'currentUser',
-    );
-    await AssignmentService().createAssignment(assignment);
-    if (mounted) Navigator.pop(context);
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final assignment = Assignment(
+        id: '',
+        courseId: widget.courseId,
+        title: _titleController.text,
+        description: _descController.text,
+        deadline: _deadline,
+        maxScore: int.parse(_scoreController.text),
+        createdAt: DateTime.now(),
+        createdBy: 'currentUser',
+      );
+      await AssignmentService().createAssignment(assignment);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assignment created successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create assignment: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

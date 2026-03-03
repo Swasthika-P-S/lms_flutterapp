@@ -3,6 +3,8 @@ import '../data/assignment.dart';
 import '../data/submission.dart';
 import '../logic/assignment_service.dart';
 import '../core/app_colors.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:provider/provider.dart';
 import '../../providers/firebase_auth_provider.dart';
@@ -18,6 +20,7 @@ class SubmitAssignmentScreen extends StatefulWidget {
 class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
   final _contentController = TextEditingController();
   bool _isLoading = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -249,20 +252,10 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
                                 : Colors.grey.withOpacity(0.5),
                           ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                          borderSide: BorderSide(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                        ),
                         filled: true,
                         fillColor: isDarkMode
-                            ? Colors.white.withOpacity(0.03)
-                            : Colors.grey.withOpacity(0.03),
-                        contentPadding: const EdgeInsets.all(16),
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.grey.withOpacity(0.05),
                       ),
                       maxLines: null,
                       expands: true,
@@ -357,29 +350,51 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
       studentId: email,
       studentName: name,
       content: _contentController.text.trim(),
+      fileName: null,
       submittedAt: DateTime.now(),
       status: widget.assignment.isOverdue ? 'late' : 'submitted',
     );
 
-    await AssignmentService().submitAssignment(submission);
+    try {
+      await AssignmentService().submitAssignment(submission);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Text('Assignment submitted successfully!'),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Assignment submitted successfully!'),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.success,
         ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.success,
-      ),
-    );
+      );
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Submission failed: $e')),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.accent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override

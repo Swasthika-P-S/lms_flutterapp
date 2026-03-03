@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/assignment.dart';
 import '../data/submission.dart';
 import 'notification_service.dart';
+import '../../services/mongo_service.dart';
 
 class AssignmentService {
   static final AssignmentService _instance = AssignmentService._internal();
@@ -37,33 +38,27 @@ class AssignmentService {
 
   // CREATE
   Future<String> createAssignment(Assignment assignment) async {
-    final doc = await _db.collection('assignments').add(_asgToMap(assignment));
-    _notifications.sendInApp(
-      'New Assignment: ${assignment.title}',
-      'Due: ${assignment.formattedDeadline}',
-    );
-    return doc.id;
+    try {
+      await MongoService.createAssignment(assignment.toMap());
+      _notifications.sendInApp(
+        'New Assignment: ${assignment.title}',
+        'Due: ${assignment.formattedDeadline}',
+      );
+      return "created"; // Backend generates ID
+    } catch (e) {
+      print('❌ Error in createAssignment: $e');
+      rethrow;
+    }
   }
 
   // READ
   Stream<List<Assignment>> getAssignmentsByCourse(String courseId) {
-    return _db
-        .collection('assignments')
-        .where('courseId', isEqualTo: courseId)
-        .snapshots()
-        .map((snap) => snap.docs.map((doc) {
-              final data = doc.data();
-              return Assignment(
-                id: doc.id,
-                courseId: data['courseId'],
-                title: data['title'],
-                description: data['description'],
-                deadline: (data['deadline'] as Timestamp).toDate(),
-                maxScore: data['maxScore'],
-                createdAt: (data['createdAt'] as Timestamp).toDate(),
-                createdBy: data['createdBy'],
-              );
-            }).toList()..sort((a, b) => a.deadline.compareTo(b.deadline)));
+    // Return a stream that polls the backend or just a Future-based fetch converted to stream
+    return Stream.fromFuture(MongoService.getAssignments(courseId)).map((list) {
+      final assignments = list.map((item) => Assignment.fromMap(item, item['_id'] ?? '')).toList();
+      assignments.sort((a, b) => a.deadline.compareTo(b.deadline));
+      return assignments;
+    });
   }
 
   Future<Assignment?> getAssignment(String assignmentId) async {
@@ -102,44 +97,36 @@ class AssignmentService {
 
   // SUBMIT
   Future<String> submitAssignment(Submission submission) async {
-    final doc = await _db.collection('submissions').add(_subToMap(submission));
-    _notifications.sendInApp(
-      'Submission received',
-      '${submission.studentName} submitted an assignment',
-    );
-    return doc.id;
+    try {
+      final response = await MongoService.submitAssignment(submission.toMap());
+      // For simplicity in resolving the conflict, we'll return the ID from response
+      return response['_id'] ?? 'submitted';
+    } catch (e) {
+      print('❌ Error in submitAssignment: $e');
+      rethrow;
+    }
   }
 
   Stream<List<Submission>> getSubmissionsByAssignment(String assignmentId) {
-    return _db
-        .collection('submissions')
-        .where('assignmentId', isEqualTo: assignmentId)
-        .snapshots()
-        .map((snap) => snap.docs.map((doc) {
-              final data = doc.data();
-              return Submission(
-                id: doc.id,
-                assignmentId: data['assignmentId'],
-                studentId: data['studentId'],
-                studentName: data['studentName'],
-                content: data['content'],
-                submittedAt: (data['submittedAt'] as Timestamp).toDate(),
-                score: data['score'],
-                feedback: data['feedback'],
-                status: data['status'],
-              );
-            }).toList()..sort((a, b) => b.submittedAt.compareTo(a.submittedAt)));
+    return Stream.fromFuture(MongoService.getSubmissions(assignmentId)).map((list) {
+      final subs = list.map((item) => Submission.fromMap(item, item['_id'] ?? '')).toList();
+      subs.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+      return subs;
+    });
   }
 
   Future<void> gradeSubmission(String submissionId, int score, String feedback) async {
-    await _db.collection('submissions').doc(submissionId).update({
-      'score': score,
-      'feedback': feedback,
-      'status': 'graded',
-    });
-    final doc = await _db.collection('submissions').doc(submissionId).get();
-    final name = doc.data()?['studentName'] ?? 'Student';
-    _notifications.sendInApp('Submission graded', '$name scored $score');
+    try {
+      await MongoService.gradeSubmission(submissionId, {
+        'score': score,
+        'feedback': feedback,
+        'status': 'graded',
+      });
+      _notifications.sendInApp('Submission graded', 'Score: $score');
+    } catch (e) {
+      print('❌ Error in gradeSubmission: $e');
+      rethrow;
+    }
   }
 
   // DEADLINES

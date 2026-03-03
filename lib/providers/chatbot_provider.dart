@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/chatbot_service.dart';
 
 /// Provider for Gemini AI Chatbot with course-specific context
@@ -10,6 +11,19 @@ class ChatbotProvider extends ChangeNotifier {
   bool _isInitialized = false;
   String? _errorMessage;
   String _selectedCourse = 'General';
+
+  ChatbotProvider() {
+    _initializeWithKey();
+  }
+
+  Future<void> _initializeWithKey() async {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey != null && apiKey.isNotEmpty) {
+      await initialize(apiKey);
+    } else {
+      print('⚠️ ChatbotProvider: GEMINI_API_KEY not found in .env');
+    }
+  }
   
   List<ChatMessage> get messages => _messages;
   bool get isLoading => _isLoading;
