@@ -150,6 +150,8 @@ app.delete('/api/questions/:id', async (req, res) => {
 // Update a question
 app.put('/api/questions/:id', async (req, res) => {
     try {
+        const question = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!question) return res.status(404).json({ error: 'Question not found' });
         res.json(question);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -289,7 +291,11 @@ app.post('/api/seed', async (req, res) => {
                 deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 maxScore: 100,
                 createdBy: 'instructor'
-            },
+            }
+        ]);
+
+        // Additional Questions for Arrays (DSA)
+        await Question.create([
             {
                 topicId: 'arrays',
                 questionText: 'What is the space complexity of an array of size n?',

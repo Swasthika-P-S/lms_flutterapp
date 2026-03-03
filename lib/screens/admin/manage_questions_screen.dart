@@ -115,13 +115,15 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
                     .toList(),
               ),
             ),
+            body: TabBarView(
               children: mappedCourses
                   .map((c) => _CourseTopicsView(
-                    course: c, 
+                    course: c,
                     isDark: isDark,
                     initialType: widget.initialType,
                   ))
                   .toList(),
+            ),
           ),
         );
       },
@@ -740,7 +742,7 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
   final _qCtrl = TextEditingController();
   final _expCtrl = TextEditingController();
   final _codeCtrl = TextEditingController(); // For MCQ code snippet
-  
+
   // Coding Specific
   final _starterCodeCtrl = TextEditingController();
   final _constraintsCtrl = TextEditingController();
@@ -750,6 +752,10 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
   late final List<TextEditingController> _optCtrl;
   late String _type; // 'quiz' or 'coding'
   bool _saving = false;
+
+  // MCQ state
+  int _correctIdx = 0;
+  static const List<String> _optionLabels = ['A', 'B', 'C', 'D'];
 
   @override
   void initState() {

@@ -8,8 +8,8 @@ import '../models/question_model.dart';
 class MongoService {
   // Use 10.0.2.2 for Android emulator, localhost for Web/iOS
   static const String _baseUrl = kIsWeb 
-      ? 'http://localhost:6000/api' 
-      : 'http://10.12.252.182:6000/api';
+      ? 'http://localhost:5000/api' 
+      : 'http://10.12.252.182:5000/api';
 
   static String get serverUrl => _baseUrl.replaceAll('/api', '');
 
