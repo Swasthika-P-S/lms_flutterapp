@@ -173,6 +173,20 @@ app.post('/api/seed', async (req, res) => {
                 correctOptionIndex: 1,
                 explanation: 'An array of size n occupies space proportional to n.',
                 order: 3
+            },
+            {
+                topicId: 'arrays',
+                questionText: 'Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.',
+                type: 'coding',
+                starterCode: 'function twoSum(nums, target) {\n  // Your code here\n}',
+                constraints: '2 <= nums.length <= 10^4\n-10^9 <= nums[i] <= 10^9',
+                difficulty: 'easy',
+                testCases: [
+                    { input: '[2,7,11,15], 9', output: '[0,1]', isHidden: false },
+                    { input: '[3,2,4], 6', output: '[1,2]', isHidden: false }
+                ],
+                explanation: 'This is a classic variation of the Two Sum problem using a hash map for O(n) complexity.',
+                order: 4
             }
         ]);
 

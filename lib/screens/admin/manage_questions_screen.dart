@@ -724,9 +724,17 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _qCtrl = TextEditingController();
   final _expCtrl = TextEditingController();
-  final _codeCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController(); // For MCQ code snippet
+  
+  // Coding Specific
+  final _starterCodeCtrl = TextEditingController();
+  final _constraintsCtrl = TextEditingController();
+  String _difficulty = 'medium';
+  final List<Map<String, TextEditingController>> _testCaseCtrls = [];
+
   late final List<TextEditingController> _optCtrl;
   int _correctIdx = 0;
+  String _type = 'quiz'; // 'quiz' or 'coding'
   bool _saving = false;
 
   static const _optionLabels = ['A', 'B', 'C', 'D'];
@@ -735,6 +743,24 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
   void initState() {
     super.initState();
     _optCtrl = List.generate(4, (_) => TextEditingController());
+    _addTestCase(); // Add one empty test case by default
+  }
+
+  void _addTestCase() {
+    setState(() {
+      _testCaseCtrls.add({
+        'input': TextEditingController(),
+        'output': TextEditingController(),
+      });
+    });
+  }
+
+  void _removeTestCase(int index) {
+    setState(() {
+      _testCaseCtrls[index]['input']!.dispose();
+      _testCaseCtrls[index]['output']!.dispose();
+      _testCaseCtrls.removeAt(index);
+    });
   }
 
   @override
@@ -742,7 +768,13 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
     _qCtrl.dispose();
     _expCtrl.dispose();
     _codeCtrl.dispose();
+    _starterCodeCtrl.dispose();
+    _constraintsCtrl.dispose();
     for (var c in _optCtrl) c.dispose();
+    for (var tc in _testCaseCtrls) {
+      tc['input']!.dispose();
+      tc['output']!.dispose();
+    }
     super.dispose();
   }
 
@@ -752,16 +784,29 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
 
     try {
       final question = QuestionModel(
-        id: '', // Blank for new question (Node backend uses _id)
-        questionText: _qCtrl.text.trim(),
-        options: _optCtrl.map((c) => c.text.trim()).toList(),
-        correctOptionIndex: _correctIdx,
-        explanation: _expCtrl.text.trim(),
-        codeSnippet: _codeCtrl.text.trim().isEmpty
-            ? null
-            : _codeCtrl.text.trim(),
+        id: '', 
         topicId: widget.topicId,
         courseId: widget.courseId,
+        questionText: _qCtrl.text.trim(),
+        type: _type,
+        explanation: _expCtrl.text.trim(),
+        
+        // MCQ Fields
+        codeSnippet: _type == 'quiz' && _codeCtrl.text.trim().isNotEmpty 
+            ? _codeCtrl.text.trim() : null,
+        options: _type == 'quiz' ? _optCtrl.map((c) => c.text.trim()).toList() : [],
+        correctOptionIndex: _type == 'quiz' ? _correctIdx : null,
+        
+        // Coding Fields
+        starterCode: _type == 'coding' ? _starterCodeCtrl.text.trim() : null,
+        constraints: _type == 'coding' ? _constraintsCtrl.text.trim() : null,
+        difficulty: _type == 'coding' ? _difficulty : null,
+        testCases: _type == 'coding' 
+            ? _testCaseCtrls.map((tc) => TestCase(
+                input: tc['input']!.text.trim(),
+                output: tc['output']!.text.trim(),
+              )).toList()
+            : [],
       );
 
       await MongoService.saveQuestion(question);
@@ -849,164 +894,214 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── Type Toggle ──────────────────────────────────────────
+            _section('Question Type', cardBg, [
+              Row(
+                children: [
+                  _typeBtn('Quiz / MCQ', 'quiz', Icons.quiz_rounded),
+                  const SizedBox(width: 12),
+                  _typeBtn('Coding Problem', 'coding', Icons.code_rounded),
+                ],
+              ),
+            ]),
+            
+            const SizedBox(height: 16),
+
             // ── Question text ───────────────────────────────────────
-            _section('Question', cardBg, [
+            _section(_type == 'quiz' ? 'Question' : 'Problem Description', cardBg, [
               TextFormField(
                 controller: _qCtrl,
-                decoration:
-                    _dec('Question Text', hint: 'Type the question here…'),
-                maxLines: 3,
+                decoration: _dec(
+                    _type == 'quiz' ? 'Question Text' : 'Problem Statement', 
+                    hint: 'Type details here…'),
+                maxLines: 4,
                 validator: (v) => v!.trim().isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _codeCtrl,
-                decoration: _dec('Code Snippet',
-                    hint: 'Optional — paste code here'),
-                maxLines: 4,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
+              if (_type == 'quiz') ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _codeCtrl,
+                  decoration: _dec('Code Snippet', hint: 'Optional — paste code here'),
+                  maxLines: 4,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ],
             ]),
 
             const SizedBox(height: 16),
 
-            // ── Options ─────────────────────────────────────────────
-            _section('Answer Options', cardBg, [
-              ...List.generate(4, (i) {
-                final isCorrect = _correctIdx == i;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      // Correct answer selector
-                      GestureDetector(
-                        onTap: () => setState(() => _correctIdx = i),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 36,
-                          height: 36,
-                          margin: const EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isCorrect
-                                ? widget.accentColor
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: isCorrect
-                                  ? widget.accentColor
-                                  : Colors.grey.shade400,
-                              width: 2,
+            if (_type == 'quiz') ...[
+              // ── MCQ Options ─────────────────────────────────────────────
+              _section('Answer Options', cardBg, [
+                ...List.generate(4, (i) {
+                  final isCorrect = _correctIdx == i;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _correctIdx = i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 36, height: 36,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isCorrect ? widget.accentColor : Colors.transparent,
+                              border: Border.all(color: isCorrect ? widget.accentColor : Colors.grey.shade400, width: 2),
                             ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _optionLabels[i],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: isCorrect
-                                    ? Colors.white
-                                    : Colors.grey.shade500,
+                            child: Center(
+                              child: Text(_optionLabels[i],
+                                style: TextStyle(fontWeight: FontWeight.w800, color: isCorrect ? Colors.white : Colors.grey.shade500),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _optCtrl[i],
-                          decoration: _dec(
-                            'Option ${_optionLabels[i]}',
-                            hint: isCorrect ? '← Correct answer' : '',
-                          ).copyWith(
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: isCorrect
-                                    ? widget.accentColor
-                                    : Colors.grey.shade400,
-                                width: isCorrect ? 2 : 1,
+                        Expanded(
+                          child: TextFormField(
+                            controller: _optCtrl[i],
+                            decoration: _dec('Option ${_optionLabels[i]}', hint: isCorrect ? '← Correct answer' : '').copyWith(
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: isCorrect ? widget.accentColor : Colors.grey.shade400, width: isCorrect ? 2 : 1),
                               ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: widget.accentColor, width: 2),
-                            ),
+                            validator: (v) => _type == 'quiz' && v!.trim().isEmpty ? 'Required' : null,
                           ),
-                          validator: (v) => v!.trim().isEmpty
-                              ? 'Add option ${_optionLabels[i]}'
-                              : null,
                         ),
-                      ),
-                      if (isCorrect)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Icon(Icons.check_circle_rounded,
-                              color: widget.accentColor),
-                        ),
-                    ],
-                  ),
-                );
-              }),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: widget.accentColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_rounded,
-                        color: widget.accentColor, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tap a circle to mark the correct answer',
-                      style: TextStyle(
-                          fontSize: 12, color: widget.accentColor),
+                      ],
                     ),
-                  ],
+                  );
+                }),
+              ]),
+            ] else ...[
+              // ── Coding Fields ────────────────────────────────────────
+              _section('Coding Details', cardBg, [
+                TextFormField(
+                  controller: _starterCodeCtrl,
+                  decoration: _dec('Starter Code', hint: 'e.g. function solve(n) { \n\n }'),
+                  maxLines: 6,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
-              ),
-            ]),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _constraintsCtrl,
+                  decoration: _dec('Constraints', hint: 'e.g. 1 <= n <= 10^5'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _difficulty,
+                  decoration: _dec('Difficulty'),
+                  items: ['easy', 'medium', 'hard'].map((d) => DropdownMenuItem(
+                    value: d,
+                    child: Text(d.toUpperCase()),
+                  )).toList(),
+                  onChanged: (v) => setState(() => _difficulty = v!),
+                ),
+              ]),
+
+              const SizedBox(height: 16),
+
+              _section('Test Cases', cardBg, [
+                ...List.generate(_testCaseCtrls.length, (i) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Test Case #${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                              onPressed: () => _removeTestCase(i),
+                            ),
+                          ],
+                        ),
+                        TextFormField(
+                          controller: _testCaseCtrls[i]['input'],
+                          decoration: _dec('Input'),
+                          validator: (v) => _type == 'coding' && v!.trim().isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _testCaseCtrls[i]['output'],
+                          decoration: _dec('Expected Output'),
+                          validator: (v) => _type == 'coding' && v!.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                TextButton.icon(
+                  onPressed: _addTestCase,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Test Case'),
+                  style: TextButton.styleFrom(foregroundColor: widget.accentColor),
+                ),
+              ]),
+            ],
 
             const SizedBox(height: 16),
 
-            // ── Explanation ─────────────────────────────────────────
             _section('Explanation (Optional)', cardBg, [
               TextFormField(
                 controller: _expCtrl,
-                decoration: _dec('Why is this the correct answer?'),
+                decoration: _dec('Why is this correct?'),
                 maxLines: 3,
               ),
             ]),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-            // ── Save button ─────────────────────────────────────────
             SizedBox(
               height: 54,
               child: ElevatedButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Icon(Icons.save_rounded),
-                label: Text(_saving ? 'Saving…' : 'Save Question',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
+                label: Text(_saving ? 'Saving…' : 'Save Question', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.accentColor,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _typeBtn(String label, String value, IconData icon) {
+    final selected = _type == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _type = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? widget.accentColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: selected ? widget.accentColor : Colors.grey.shade400, width: 2),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: selected ? Colors.white : Colors.grey, size: 24),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: selected ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
+            ],
+          ),
         ),
       ),
     );
@@ -1019,24 +1114,13 @@ class _AddQuestionScreenState extends State<_AddQuestionScreen> {
         color: bg,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: widget.accentColor,
-              letterSpacing: 0.5,
-            ),
-          ),
+          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: widget.accentColor, letterSpacing: 0.5)),
           const SizedBox(height: 14),
           ...children,
         ],

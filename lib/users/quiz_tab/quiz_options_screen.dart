@@ -193,12 +193,33 @@ class QuizOptionsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      // Very Compact Option Cards
                       _buildTinyOptionCard(
                         context,
                         icon: Icons.play_circle_rounded,
                         title: topic.quizTaken ? 'Retake Quiz' : 'Start Quiz',
                         gradient: LinearGradient(colors: course.gradientColors),
+                        onTap: () {
+                          // Note: In this old directory, it might not have the filter capability yet
+                          // but we'll try to keep it consistent if possible.
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuizScreen(
+                                topic: topic,
+                                course: course,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTinyOptionCard(
+                        context,
+                        icon: Icons.code_rounded,
+                        title: 'Coding Challenges',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00D4FF), Color(0xFF0099CC)],
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -230,24 +251,6 @@ class QuizOptionsScreen extends StatelessWidget {
                             );
                           },
                         ),
-                      if (topic.quizTaken) const SizedBox(height: 8),
-                      _buildTinyOptionCard(
-                        context,
-                        icon: Icons.fitness_center_rounded,
-                        title: 'Practice Mode',
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00D4FF), Color(0xFF0099CC)],
-                          ),
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Starting practice...'),
-                              duration: Duration(seconds: 1),
-                              backgroundColor: Color(0xFF00D4FF),
-                            ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),
