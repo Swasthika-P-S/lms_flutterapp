@@ -205,35 +205,40 @@ class SubmissionsListScreen extends StatelessWidget {
             const SizedBox(width: 12),
             
             // Status/Score Chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: chipColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(statusIcon, size: 16, color: chipColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    sub.score != null ? '${sub.score} pts' : sub.status,
-                    style: TextStyle(
-                      color: chipColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: chipColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: chipColor),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        sub.score != null ? '${sub.score} pts' : sub.status,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: chipColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             
             // Chevron
             Icon(
               Icons.chevron_right,
               color: AppColors.getTextSecondary(context),
-              size: 20,
+              size: 18,
             ),
           ],
         ),

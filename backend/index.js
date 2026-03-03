@@ -6,6 +6,7 @@ const cors = require('cors');
 const Course = require('./models/Course');
 const Topic = require('./models/Topic');
 const Question = require('./models/Question');
+const Assignment = require('./models/Assignment');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -92,10 +93,42 @@ app.delete('/api/questions/:id', async (req, res) => {
 // Update a question
 app.put('/api/questions/:id', async (req, res) => {
     try {
-        const question = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json(question);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+// ── Assignment Endpoints ──
+
+// Get assignments for a course
+app.get('/api/assignments/:courseId', async (req, res) => {
+    try {
+        const assignments = await Assignment.find({ courseId: req.params.courseId }).sort({ deadline: 1 });
+        res.json(assignments);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create an assignment
+app.post('/api/assignments', async (req, res) => {
+    try {
+        const assignment = new Assignment(req.body);
+        await assignment.save();
+        res.status(201).json(assignment);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete an assignment
+app.delete('/api/assignments/:id', async (req, res) => {
+    try {
+        await Assignment.findByIdAndDelete(req.params.id);
+        res.json({ message: '✅ Assignment deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -106,52 +139,64 @@ app.post('/api/seed', async (req, res) => {
         await Course.deleteMany({});
         await Topic.deleteMany({});
         await Question.deleteMany({});
+        await Assignment.deleteMany({});
 
-        // 1. DSA Course
-        const dsaCourse = await Course.create({
-            courseId: 'dsa',
-            title: 'Data Structures & Algorithms',
-            description: 'Master DSA for technical interviews',
-            icon: '🌳',
-            color: '#8B5CF6'
+        // 1. Mobile App Development
+        const madCourse = await Course.create({
+            courseId: 'mad',
+            title: 'Mobile App Development',
+            description: 'Learn to build cross-platform apps with Flutter',
+            icon: '📱',
+            color: '#3B82F6'
         });
 
-        const dsaTopics = [
-            { id: 'arrays', name: 'Arrays', order: 1 },
-            { id: 'linked-lists', name: 'Linked Lists', order: 2 },
-            { id: 'stacks-queues', name: 'Stacks & Queues', order: 3 },
-            { id: 'trees', name: 'Trees', order: 4 },
+        const madTopics = [
+            { id: 'flutter-basics', name: 'Flutter Basics', order: 1 },
+            { id: 'state-management', name: 'State Management', order: 2 },
+            { id: 'api-integration', name: 'API Integration', order: 3 },
         ];
 
-        for (const t of dsaTopics) {
-            await Topic.create({ _id: t.id, courseId: 'dsa', name: t.name, order: t.order });
+        for (const t of madTopics) {
+            await Topic.create({ _id: t.id, courseId: 'mad', name: t.name, order: t.order });
         }
 
-        // Questions for Arrays
+        // Questions for Flutter Basics
         await Question.create([
             {
-                topicId: 'arrays',
-                questionText: 'What is the time complexity of accessing an array element by index?',
-                options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
+                topicId: 'flutter-basics',
+                questionText: 'What is a Widget in Flutter?',
+                options: ['A UI component', 'A database', 'A network request', 'A hardware sensor'],
                 correctOptionIndex: 0,
-                explanation: 'Array access by index is O(1) — the memory address is computed directly.',
+                explanation: 'Almost everything in Flutter is a widget! They are the basic building blocks of a Flutter app\'s user interface.',
                 order: 1
             },
             {
-                topicId: 'arrays',
-                questionText: 'Which describes a Dynamic Array?',
-                options: ['Fixed size at compile time', 'Can grow/shrink at runtime', 'Stores integers only', 'Non-contiguous memory'],
+                topicId: 'flutter-basics',
+                questionText: 'Which command is used to run a Flutter app?',
+                options: ['flutter start', 'flutter run', 'flutter build', 'flutter launch'],
                 correctOptionIndex: 1,
-                explanation: 'Dynamic arrays (e.g. vector in C++) resize themselves as needed.',
+                explanation: 'flutter run is the standard command to compile and run your app on a device or emulator.',
                 order: 2
+            }
+        ]);
+
+        // MAD Assignments
+        await Assignment.create([
+            {
+                courseId: 'mad',
+                title: 'UI Design Challenge',
+                description: 'Create a beautiful login screen using Flutter widgets.',
+                deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
             },
             {
-                topicId: 'arrays',
-                questionText: 'What is the space complexity of an array of size n?',
-                options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
-                correctOptionIndex: 1,
-                explanation: 'An array of size n occupies space proportional to n.',
-                order: 3
+                courseId: 'mad',
+                title: 'Weather API Task',
+                description: 'Fetch weather data from an API and display it in a list.',
+                deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
             }
         ]);
 

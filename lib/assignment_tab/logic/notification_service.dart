@@ -11,6 +11,12 @@ class NotificationService {
     _notifier = notifier;
   }
 
+  void unregister(InAppNotifier notifier) {
+    if (_notifier == notifier) {
+      _notifier = null;
+    }
+  }
+
   void sendInApp(String title, String body) {
     final cb = _notifier;
     if (cb != null) {

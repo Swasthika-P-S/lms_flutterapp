@@ -9,7 +9,7 @@ class MongoService {
   // Use 10.0.2.2 for Android emulator, localhost for Web/iOS
   static const String _baseUrl = kIsWeb 
       ? 'http://localhost:5000/api' 
-      : 'http://10.0.2.2:5000/api';
+      : 'http://10.12.252.182:5000/api';
 
   // Session-based cache for quiz results (topicId -> (questionIndex -> selectedOptionIndex))
   static final Map<String, Map<int, int>> _lastAnswersCache = {};
@@ -70,6 +70,38 @@ class MongoService {
       }
     } catch (e) {
       print('❌ MongoService Error (getQuestions): $e');
+      rethrow;
+    }
+  }
+
+  /// Get assignments for a specific course
+  static Future<List<dynamic>> getAssignments(String courseId) async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/assignments/$courseId'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load assignments');
+      }
+    } catch (e) {
+      print('❌ MongoService Error (getAssignments): $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new assignment
+  static Future<void> createAssignment(Map<String, dynamic> assignmentData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/assignments'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(assignmentData),
+      );
+      if (response.statusCode != 201) {
+        throw Exception('Failed to create assignment: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ MongoService Error (createAssignment): $e');
       rethrow;
     }
   }

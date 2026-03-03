@@ -31,61 +31,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _notificationService.register((title, body) {
-      setState(() {
-        _lastNotificationTitle = title;
-        _lastNotificationBody = body;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$title • $body')));
-      }
-    });
-
-    _seedDemoAssignments();
+    _notificationService.register(_onNotification);
   }
 
-  Future<void> _seedDemoAssignments() async {
-    final existing = await _assignmentService
-        .getAssignmentsByCourse(widget.courseId)
-        .first;
-    if (existing.isNotEmpty) return;
+  void _onNotification(String title, String body) {
+    if (!mounted) return;
+    setState(() {
+      _lastNotificationTitle = title;
+      _lastNotificationBody = body;
+    });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$title • $body')));
+  }
 
-    final now = DateTime.now();
-
-    await _assignmentService.createAssignment(Assignment(
-      id: '',
-      courseId: widget.courseId,
-      title: 'Intro to Dart',
-      description: 'Read the Dart language tour and summarize key features.',
-      deadline: now.add(const Duration(days: 2)),
-      maxScore: 100,
-      createdAt: now,
-      createdBy: 'instructor1',
-    ));
-
-    await _assignmentService.createAssignment(Assignment(
-      id: '',
-      courseId: widget.courseId,
-      title: 'Flutter Widgets',
-      description: 'Build a small app using layout and stateful widgets.',
-      deadline: now.add(const Duration(days: 5)),
-      maxScore: 100,
-      createdAt: now,
-      createdBy: 'instructor1',
-    ));
-
-    await _assignmentService.createAssignment(Assignment(
-      id: '',
-      courseId: widget.courseId,
-      title: 'QR Integration',
-      description:
-          'Implement QR code generation and scanning in your LMS module.',
-      deadline: now.add(const Duration(days: 7)),
-      maxScore: 100,
-      createdAt: now,
-      createdBy: 'instructor1',
-    ));
+  @override
+  void dispose() {
+    _notificationService.unregister(_onNotification);
+    super.dispose();
   }
 
   @override

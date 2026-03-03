@@ -2,6 +2,7 @@ import 'dart:async';
 import '../data/assignment.dart';
 import '../data/submission.dart';
 import 'notification_service.dart';
+import '../../services/mongo_service.dart';
 
 class AssignmentService {
   static final AssignmentService _instance = AssignmentService._internal();
@@ -20,33 +21,26 @@ class AssignmentService {
 
   // CREATE
   Future<String> createAssignment(Assignment assignment) async {
-    final id = _generateId('asg');
-    final newAsg = Assignment(
-      id: id,
-      courseId: assignment.courseId,
-      title: assignment.title,
-      description: assignment.description,
-      deadline: assignment.deadline,
-      maxScore: assignment.maxScore,
-      createdAt: assignment.createdAt,
-      createdBy: assignment.createdBy,
-    );
-    _assignments[id] = newAsg;
-    _emitAssignments();
-    _notifications.sendInApp(
-      'New Assignment: ${assignment.title}',
-      'Due: ${assignment.formattedDeadline}',
-    );
-    return id;
+    try {
+      await MongoService.createAssignment(assignment.toMap());
+      _notifications.sendInApp(
+        'New Assignment: ${assignment.title}',
+        'Due: ${assignment.formattedDeadline}',
+      );
+      return "created"; // Backend generates ID
+    } catch (e) {
+      print('❌ Error in createAssignment: $e');
+      rethrow;
+    }
   }
 
   // READ
   Stream<List<Assignment>> getAssignmentsByCourse(String courseId) {
-    Future.microtask(_emitAssignments);
-    return _assignmentsStream.stream.map((list) {
-      final filtered = list.where((a) => a.courseId == courseId).toList();
-      filtered.sort((a, b) => a.deadline.compareTo(b.deadline));
-      return filtered;
+    // Return a stream that polls the backend or just a Future-based fetch converted to stream
+    return Stream.fromFuture(MongoService.getAssignments(courseId)).map((list) {
+      final assignments = list.map((item) => Assignment.fromMap(item, item['_id'] ?? '')).toList();
+      assignments.sort((a, b) => a.deadline.compareTo(b.deadline));
+      return assignments;
     });
   }
 
