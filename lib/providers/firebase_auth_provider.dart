@@ -25,9 +25,26 @@ class FirebaseAuthProvider extends ChangeNotifier {
   
   /// ONLY this email gets admin access — checked against Firebase Auth email
   /// (works even when Firestore is offline/unavailable)
-  static const String _adminEmail = 'swasthikaponnusamy05@gmail.com';
-  bool get isAdmin =>
-      _user?.email?.toLowerCase().trim() == _adminEmail;
+  static const List<String> _adminEmails = [
+    'swasthikaponnusamy05@gmail.com',
+    // Add teammate emails here if you want them to be admins regardless of Firestore
+  ];
+
+  bool get isAdmin {
+    final email = _user?.email?.toLowerCase().trim();
+    if (email == null) return false;
+    
+    // 1. Direct email check (Master Admins)
+    if (_adminEmails.contains(email)) return true;
+    
+    // 2. Trust Firestore role if we have it
+    if (_userModel?.role == 'admin') return true;
+    
+    // 3. Fallback: non-student email domains (as per AuthService logic)
+    if (!email.endsWith('@cb.students.amrita.edu')) return true;
+
+    return false;
+  }
   
   FirebaseAuthProvider() {
     _initAuthListener();

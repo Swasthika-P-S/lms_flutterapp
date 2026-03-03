@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/assignment.dart';
 import 'submit_assignment_screen.dart';
 import 'submissions_list_screen.dart';
 import '../core/app_colors.dart';
+import '../../providers/firebase_auth_provider.dart';
 
 class AssignmentDetailScreen extends StatelessWidget {
   final Assignment assignment;
@@ -156,64 +158,66 @@ class AssignmentDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Submit Button (Student Only)
+            if (!context.watch<FirebaseAuthProvider>().isAdmin)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.upload),
-                label: const Text(
-                  'Submit Assignment',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  icon: const Icon(Icons.upload),
+                  label: const Text(
+                    'Submit Assignment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubmitAssignmentScreen(assignment: assignment),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubmitAssignmentScreen(assignment: assignment),
+                    ),
                   ),
                 ),
               ),
-            ),
             const SizedBox(height: 12),
-            // View Submissions Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // View Submissions Button (Admin Only)
+            if (context.watch<FirebaseAuthProvider>().isAdmin)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.list),
-                label: const Text(
-                  'View Submissions',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  icon: const Icon(Icons.list),
+                  label: const Text(
+                    'View Submissions',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubmissionsListScreen(assignmentId: assignment.id),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubmissionsListScreen(assignmentId: assignment.id),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

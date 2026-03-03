@@ -5,6 +5,7 @@ import '../screens/admin/manage_questions_screen.dart';
 import '../home_tab/screens/settings/settings_screen.dart';
 import '../home_tab/screens/providers/theme_provider.dart';
 import '../providers/firebase_auth_provider.dart';
+import '../assignment_tab/ui/course_selector_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────
 ///  ADMIN PORTAL SHELL
@@ -24,6 +25,7 @@ class _AdminShellState extends State<AdminShell> {
   static const _navItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
     _NavItem(icon: Icons.quiz_rounded, label: 'Questions'),
+    _NavItem(icon: Icons.assignment_rounded, label: 'Assignments'),
     _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
   ];
 
@@ -39,6 +41,7 @@ class _AdminShellState extends State<AdminShell> {
     final pages = [
       const AdminDashboardScreen(),
       const ManageQuestionsScreen(),
+      const AssignmentCourseSelector(isAdmin: true), // NEW
       const SettingsScreen(),
     ];
 
@@ -52,7 +55,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   PreferredSizeWidget _buildAppBar(bool isDark, ThemeProvider themeProvider, String adminName) {
-    const titles = ['Dashboard', 'Manage Questions', 'Settings'];
+    const titles = ['Dashboard', 'Manage Questions', 'Assignments', 'Settings'];
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF0F0F2A) : Colors.white,
       elevation: 0,

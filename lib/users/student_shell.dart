@@ -4,7 +4,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:learnhub/quiz_tab/courses_screen.dart';
 import '../app_tab/screens/course_listing_screen.dart';
-import '../assignment_tab/ui/dashboard_screen.dart';
+import '../assignment_tab/ui/course_selector_screen.dart';
 import '../home_tab/screens/settings/settings_screen.dart';
 import '../widgets/chatbot_widget.dart';
 import '../providers/firebase_auth_provider.dart';
@@ -60,7 +60,7 @@ class _StudentShellState extends State<StudentShell>
       const StudentDashboardScreen(),
       const CourseListingScreen(),
       const CoursesScreen(),
-      DashboardScreen(userName: userName, courseId: 'course_flutter_basics'),
+      const AssignmentCourseSelector(isAdmin: false),
       const StudentProfileScreen(),
       const SettingsScreen(),
     ];

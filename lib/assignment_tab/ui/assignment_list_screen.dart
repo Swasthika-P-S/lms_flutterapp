@@ -5,6 +5,9 @@ import 'create_assignment_screen.dart';
 import 'assignment_detail_screen.dart';
 import '../core/app_colors.dart';
 
+import 'package:provider/provider.dart';
+import '../../providers/firebase_auth_provider.dart';
+
 class AssignmentListScreen extends StatelessWidget {
   final String courseId;
   final AssignmentService _service = AssignmentService();
@@ -78,7 +81,7 @@ class AssignmentListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: context.watch<FirebaseAuthProvider>().isAdmin ? FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -88,7 +91,7 @@ class AssignmentListScreen extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
-      ),
+      ) : null,
     );
   }
 

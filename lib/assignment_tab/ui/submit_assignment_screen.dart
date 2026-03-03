@@ -4,6 +4,9 @@ import '../data/submission.dart';
 import '../logic/assignment_service.dart';
 import '../core/app_colors.dart';
 
+import 'package:provider/provider.dart';
+import '../../providers/firebase_auth_provider.dart';
+
 class SubmitAssignmentScreen extends StatefulWidget {
   final Assignment assignment;
   const SubmitAssignmentScreen({super.key, required this.assignment});
@@ -342,11 +345,17 @@ class _SubmitAssignmentScreenState extends State<SubmitAssignmentScreen> {
 
     setState(() => _isLoading = true);
 
+    final auth = context.read<FirebaseAuthProvider>();
+    final user = auth.userModel;
+    final firebaseUser = auth.user;
+    final name = user?.displayName ?? firebaseUser?.displayName ?? 'Student';
+    final email = user?.email ?? firebaseUser?.email ?? 'Unknown';
+
     final submission = Submission(
       id: '',
       assignmentId: widget.assignment.id,
-      studentId: 'currentStudent',
-      studentName: 'Current Student',
+      studentId: email,
+      studentName: name,
       content: _contentController.text.trim(),
       submittedAt: DateTime.now(),
       status: widget.assignment.isOverdue ? 'late' : 'submitted',

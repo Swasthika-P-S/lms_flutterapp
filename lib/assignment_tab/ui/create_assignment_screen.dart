@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../data/assignment.dart';
 import '../logic/assignment_service.dart';
 import '../core/app_colors.dart';
+import '../../providers/firebase_auth_provider.dart';
 
 class CreateAssignmentScreen extends StatefulWidget {
   final String courseId;
@@ -225,7 +227,7 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
   }
 
   Future<void> _create() async {
-    if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<FirebaseAuthProvider>();
     final assignment = Assignment(
       id: '',
       courseId: widget.courseId,
@@ -234,7 +236,7 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
       deadline: _deadline,
       maxScore: int.parse(_scoreController.text),
       createdAt: DateTime.now(),
-      createdBy: 'currentUser',
+      createdBy: auth.user?.email ?? 'Unknown',
     );
     await AssignmentService().createAssignment(assignment);
     if (mounted) Navigator.pop(context);
