@@ -63,7 +63,16 @@ app.get('/ping', (req, res) => {
     res.send('pong');
 });
 
-// ── API Endpoints ──────────────────────────────────────────
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'UP',
+        env: process.env.NODE_ENV,
+        dbStatus: mongoose.connection.readyState
+    });
+});
+
+// ── Course Endpoints ──────────────────────────────────────────
 
 // Get all courses
 app.get('/api/courses', async (req, res) => {
@@ -657,19 +666,37 @@ app.post('/api/chatbot', async (req, res) => {
 
 // ── Server Setup ──────────────────────────────────────────
 
+// Cached connection variable
+let isConnected = false;
+
 const connectDB = async () => {
-    if (mongoose.connection.readyState >= 1) return;
+    if (isConnected && mongoose.connection.readyState === 1) {
+        return;
+    }
+
     try {
-        console.log('🔄 Connecting to MongoDB with URI:', process.env.MONGODB_URI);
-        await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 30000,
-            connectTimeoutMS: 30000
+        console.log('🔄 Connecting to MongoDB...');
+        const db = await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000, // Reduced for faster serverless response
+            connectTimeoutMS: 10000,
         });
+        isConnected = db.connections[0].readyState === 1;
         console.log('✅ Connected to MongoDB Atlas');
     } catch (err) {
         console.error('❌ MongoDB Connection Error:', err.message);
+        throw err;
     }
 };
+
+// Middleware to ensure DB is connected before any request
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        res.status(500).json({ error: 'Database connection failed' });
+    }
+});
 
 // Start the server locally if not on Vercel
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
@@ -687,9 +714,6 @@ if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
             }
         });
     });
-} else {
-    // For Vercel Serverless execution
-    connectDB();
 }
 
 module.exports = app;
