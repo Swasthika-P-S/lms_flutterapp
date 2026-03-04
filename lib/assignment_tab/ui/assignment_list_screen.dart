@@ -169,6 +169,7 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
     bool isDarkMode,
   ) {
     final isOverdue = assignment.isOverdue;
+    final primaryColor = isOverdue ? AppColors.accent : AppColors.primary;
     
     return GestureDetector(
       onTap: () async {
@@ -181,112 +182,125 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
         _refresh();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: AppConstants.spacing),
-        padding: const EdgeInsets.all(AppConstants.cardPadding),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: AppColors.getCard(context),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          border: Border.all(
-            color: isDarkMode 
-                ? Colors.white.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.2),
-          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.06),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            // Icon Badge
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isOverdue 
-                    ? AppColors.accent.withOpacity(0.1)
-                    : AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isOverdue ? Icons.warning_rounded : Icons.assignment_rounded,
-                color: isOverdue ? AppColors.accent : AppColors.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    assignment.title,
-                    style: TextStyle(
-                      color: AppColors.getTextPrimary(context),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    assignment.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.getTextSecondary(context),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: AppColors.getTextSecondary(context),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        assignment.formattedDeadline,
-                        style: TextStyle(
-                          color: AppColors.getTextSecondary(context),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (isOverdue)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Overdue',
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Left Accent Bar
+                Container(
+                  width: 6,
+                  color: primaryColor,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                isOverdue ? Icons.priority_high_rounded : Icons.assignment_rounded,
+                                color: primaryColor,
+                                size: 20,
+                              ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                assignment.title,
+                                style: TextStyle(
+                                  color: AppColors.getTextPrimary(context),
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${assignment.maxScore} pts',
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          assignment.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.getTextSecondary(context),
+                            fontSize: 14,
+                            height: 1.4,
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 15,
+                              color: AppColors.getTextSecondary(context),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              assignment.formattedDeadline,
+                              style: TextStyle(
+                                color: AppColors.getTextSecondary(context),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (isOverdue ? AppColors.accent : AppColors.success).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                isOverdue ? 'Overdue' : 'Active',
+                                style: TextStyle(
+                                  color: isOverdue ? AppColors.accent : AppColors.success,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Chevron
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.getTextSecondary(context),
-            ),
-          ],
+          ),
         ),
       ),
     );

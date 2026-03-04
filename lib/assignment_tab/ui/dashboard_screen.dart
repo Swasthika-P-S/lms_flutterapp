@@ -76,64 +76,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _quickActions(BuildContext context, bool isDarkMode) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _actionTile(
-            context,
-            isDarkMode,
-            Icons.list,
-            AppColors.accent,
-            'Assignments',
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      AssignmentListScreen(courseId: widget.courseId),
-                ),
-              );
-            },
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12, left: 4),
+          child: Text(
+            'Quick Actions',
+            style: TextStyle(
+              color: AppColors.getTextPrimary(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        const SizedBox(width: AppConstants.spacing),
-        Expanded(
-          child: _actionTile(
-            context,
-            isDarkMode,
-            Icons.qr_code,
-            AppColors.primary,
-            'Generate QR',
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => QRGeneratorScreen(courseId: widget.courseId),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: AppConstants.spacing),
-        Expanded(
-          child: _actionTile(
-            context,
-            isDarkMode,
-            Icons.qr_code_scanner,
-            AppColors.warning,
-            'Join via QR',
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => QRScannerScreen(
-                    expectedCourseId: widget.courseId,
-                    userId: 'currentUser',
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.5,
+          children: [
+            _actionTile(
+              context,
+              isDarkMode,
+              Icons.assignment_rounded,
+              AppColors.primary,
+              'Assignments',
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AssignmentListScreen(courseId: widget.courseId),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
+            _actionTile(
+              context,
+              isDarkMode,
+              Icons.history_edu_rounded,
+              AppColors.success,
+              'Submissions',
+              () {
+                // For direct access to submissions list
+                // We'll show a course-wide submissions view or just list assignments again
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AssignmentListScreen(courseId: widget.courseId),
+                  ),
+                );
+              },
+            ),
+            _actionTile(
+              context,
+              isDarkMode,
+              Icons.qr_code_rounded,
+              Colors.orange,
+              'Generate QR',
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QRGeneratorScreen(courseId: widget.courseId),
+                  ),
+                );
+              },
+            ),
+            _actionTile(
+              context,
+              isDarkMode,
+              Icons.qr_code_scanner_rounded,
+              AppColors.accent,
+              'Join via QR',
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QRScannerScreen(
+                      expectedCourseId: widget.courseId,
+                      userId: 'currentUser',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ],
     );

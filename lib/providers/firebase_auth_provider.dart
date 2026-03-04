@@ -29,7 +29,7 @@ class FirebaseAuthProvider extends ChangeNotifier {
     
     // STRICT RULE: ONLY this email can access Admin Shell
     // All other users (regardless of domain or Firestore role) are students
-    return email == 'swasthikaponnusamy05@gmail.com';
+    return email == 'swasthikaponnusamy05@gmail.com' || email == 'khushivalluri@gmail.com';
   }
   
   FirebaseAuthProvider() {
