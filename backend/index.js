@@ -657,7 +657,8 @@ app.post('/api/chatbot', async (req, res) => {
 
 // ── Server Setup ──────────────────────────────────────────
 
-const startServer = async () => {
+const connectDB = async () => {
+    if (mongoose.connection.readyState >= 1) return;
     try {
         console.log('🔄 Connecting to MongoDB with URI:', process.env.MONGODB_URI);
         await mongoose.connect(process.env.MONGODB_URI, {
@@ -665,25 +666,30 @@ const startServer = async () => {
             connectTimeoutMS: 30000
         });
         console.log('✅ Connected to MongoDB Atlas');
+    } catch (err) {
+        console.error('❌ MongoDB Connection Error:', err.message);
+    }
+};
 
+// Start the server locally if not on Vercel
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    connectDB().then(() => {
         const server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
         });
 
         server.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
-                console.error(`❌ Port ${PORT} is already in use by another application.`);
-                console.error(`⚠️  Please change the PORT in backend/.env to another number (e.g., 6000, 6001).`);
+                console.error(`❌ Port ${PORT} is already in use.`);
                 process.exit(1);
             } else {
                 console.error('❌ Server Error:', err);
             }
         });
-    } catch (err) {
-        console.error('❌ MongoDB Connection Error:', err.message);
-        console.error('⚠️  Please update MONGODB_URI in backend/.env');
-        // Do not exit, just wait or allow retry if using nodemon
-    }
-};
+    });
+} else {
+    // For Vercel Serverless execution
+    connectDB();
+}
 
-startServer();
+module.exports = app;
