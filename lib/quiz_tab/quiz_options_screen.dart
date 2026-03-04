@@ -213,28 +213,6 @@ class QuizOptionsScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 8),
-                      _buildTinyOptionCard(
-                        context,
-                        icon: Icons.code_rounded,
-                        title: 'Coding Challenges',
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00D4FF), Color(0xFF0099CC)],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizScreen(
-                                topic: topic,
-                                course: course,
-                                questionTypeFilter: 'coding',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
                       if (topic.quizTaken)
                         _buildTinyOptionCard(
                           context,

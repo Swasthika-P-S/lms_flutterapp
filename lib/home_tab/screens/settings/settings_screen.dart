@@ -8,7 +8,8 @@ import 'package:learnhub/providers/locale_provider.dart';
 import '../../../../providers/firebase_auth_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final bool showBackButton;
+  const SettingsScreen({super.key, this.showBackButton = false});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -114,6 +115,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: isDark ? const Color(0xFF13132A) : Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: widget.showBackButton 
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : Colors.black87),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
           'Settings',
           style: TextStyle(

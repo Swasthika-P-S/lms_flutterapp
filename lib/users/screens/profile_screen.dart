@@ -285,7 +285,7 @@ class StudentProfileScreen extends StatelessWidget {
                   color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
           const SizedBox(height: 12),
           _actionTile(Icons.settings_rounded, 'Settings', 'Themes, Notifications', isDark, cardBg,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen(showBackButton: true)))),
           const SizedBox(height: 8),
           _actionTile(Icons.logout_rounded, 'Sign Out', 'Log out of your account', isDark, cardBg,
               color: Colors.redAccent,

@@ -248,116 +248,180 @@ app.post('/api/seed', async (req, res) => {
         await Assignment.deleteMany({});
         await Submission.deleteMany({});
 
-        // 1. Mobile App Development
-        const madCourse = await Course.create({
-            courseId: 'mad',
-            title: 'Mobile App Development',
-            description: 'Learn to build cross-platform apps with Flutter',
-            icon: '📱',
-            color: '#3B82F6'
+        // ─── 1. DSA Course ───────────────────────────────────────────
+        await Course.create({
+            courseId: 'dsa',
+            title: 'Data Structures & Algorithms',
+            description: 'Master arrays, linked lists, trees, graphs and more',
+            icon: '🌳',
+            color: '#6C63FF'
         });
 
-        const madTopics = [
-            { id: 'flutter-basics', name: 'Flutter Basics', order: 1 },
-            { id: 'state-management', name: 'State Management', order: 2 },
-            { id: 'api-integration', name: 'API Integration', order: 3 },
+        const dsaTopics = [
+            { id: 'arrays', name: 'Arrays', order: 1 },
+            { id: 'linked-lists', name: 'Linked Lists', order: 2 },
+            { id: 'trees', name: 'Trees', order: 3 },
         ];
-
-        for (const t of madTopics) {
-            await Topic.create({ _id: t.id, courseId: 'mad', name: t.name, order: t.order });
+        for (const t of dsaTopics) {
+            await Topic.create({ _id: t.id, courseId: 'dsa', name: t.name, order: t.order });
         }
 
-        // Questions for Flutter Basics
+        // Arrays questions
         await Question.create([
             {
-                topicId: 'flutter-basics',
-                questionText: 'What is a Widget in Flutter?',
-                options: ['A UI component', 'A database', 'A network request', 'A hardware sensor'],
-                correctOptionIndex: 0,
-                explanation: 'Almost everything in Flutter is a widget! They are the basic building blocks of a Flutter app\'s user interface.',
+                topicId: 'arrays', type: 'quiz',
+                questionText: 'What is the time complexity of accessing an element in an array by index?',
+                options: ['O(n)', 'O(log n)', 'O(1)', 'O(n²)'],
+                correctOptionIndex: 2,
+                explanation: 'Arrays allow direct index-based access in constant time O(1) since elements are stored contiguously in memory.',
                 order: 1
             },
             {
-                topicId: 'flutter-basics',
-                questionText: 'Which command is used to run a Flutter app?',
-                options: ['flutter start', 'flutter run', 'flutter build', 'flutter launch'],
+                topicId: 'arrays', type: 'quiz',
+                questionText: 'Which operation is most expensive for a dynamic array when it needs to grow?',
+                options: ['Accessing an element', 'Resizing (copying all elements)', 'Appending to an empty slot', 'Reading the length'],
                 correctOptionIndex: 1,
-                explanation: 'flutter run is the standard command to compile and run your app on a device or emulator.',
+                explanation: 'When a dynamic array runs out of capacity, it must allocate a new larger array and copy all existing elements, which is O(n).',
                 order: 2
-            }
-        ]);
-
-        // MAD Assignments
-        await Assignment.create([
-            {
-                courseId: 'mad',
-                title: 'UI Design Challenge',
-                description: 'Create a beautiful login screen using Flutter widgets.',
-                deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-                maxScore: 100,
-                createdBy: 'instructor'
             },
             {
-                courseId: 'mad',
-                title: 'Weather API Task',
-                description: 'Fetch weather data from an API and display it in a list.',
-                deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                maxScore: 100,
-                createdBy: 'instructor'
-            }
-        ]);
-
-        // Additional Questions for Arrays (DSA)
-        await Question.create([
-            {
-                topicId: 'arrays',
+                topicId: 'arrays', type: 'quiz',
                 questionText: 'What is the space complexity of an array of size n?',
                 options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
                 correctOptionIndex: 1,
-                explanation: 'An array of size n occupies space proportional to n.',
+                explanation: 'An array of size n stores n elements, so it occupies O(n) space.',
                 order: 3
             },
             {
-                topicId: 'arrays',
-                questionText: 'Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.',
-                type: 'coding',
-                starterCode: 'function twoSum(nums, target) {\n  // Your code here\n}',
-                constraints: '2 <= nums.length <= 10^4\n-10^9 <= nums[i] <= 10^9',
-                difficulty: 'easy',
-                testCases: [
-                    { input: '[2,7,11,15], 9', output: '[0,1]', isHidden: false },
-                    { input: '[3,2,4], 6', output: '[1,2]', isHidden: false }
-                ],
-                explanation: 'This is a classic variation of the Two Sum problem using a hash map for O(n) complexity.',
+                topicId: 'arrays', type: 'quiz',
+                questionText: 'In a sorted array, which algorithm is most efficient for searching?',
+                options: ['Linear Search', 'Jump Search', 'Binary Search', 'Bubble Sort'],
+                correctOptionIndex: 2,
+                explanation: 'Binary Search repeatedly halves the search space, achieving O(log n) time in a sorted array.',
                 order: 4
             }
         ]);
 
-        // Questions for Linked Lists
+        // Linked Lists questions
         await Question.create([
             {
-                topicId: 'linked-lists',
+                topicId: 'linked-lists', type: 'quiz',
                 questionText: 'What is the time complexity to insert a node at the beginning of a Singly Linked List?',
                 options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
                 correctOptionIndex: 0,
-                explanation: 'Inserting at the head only requires changing a few pointers, which is O(1).',
+                explanation: 'Inserting at the head only requires updating the head pointer and the new node\'s next pointer — no traversal needed, so it\'s O(1).',
                 order: 1
             },
             {
-                topicId: 'linked-lists',
-                questionText: 'In a Doubly Linked List, what does each node contain?',
-                options: ['Data and next pointer', 'Data and previous pointer', 'Data, next, and previous pointers', 'Just data'],
+                topicId: 'linked-lists', type: 'quiz',
+                questionText: 'In a Doubly Linked List, each node contains:',
+                options: ['Data and next pointer only', 'Data and previous pointer only', 'Data, next, and previous pointers', 'Only data'],
                 correctOptionIndex: 2,
-                explanation: 'Doubly linked lists store pointers to both next and previous nodes.',
+                explanation: 'Doubly linked list nodes hold data plus pointers to both the next and previous nodes.',
                 order: 2
+            },
+            {
+                topicId: 'linked-lists', type: 'quiz',
+                questionText: 'Which linked list variant allows the last node to point back to the head?',
+                options: ['Doubly Linked List', 'Circular Linked List', 'Skip List', 'XOR Linked List'],
+                correctOptionIndex: 1,
+                explanation: 'A Circular Linked List has its last node\'s next pointer pointing back to the head, forming a cycle.',
+                order: 3
+            },
+            {
+                topicId: 'linked-lists', type: 'quiz',
+                questionText: 'What is the time complexity of searching for a value in an unsorted singly linked list?',
+                options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+                correctOptionIndex: 2,
+                explanation: 'In the worst case, you must traverse every node to find the target value, which is O(n).',
+                order: 4
             }
         ]);
 
-        // 2. OOP Course
+        // Trees questions
+        await Question.create([
+            {
+                topicId: 'trees', type: 'quiz',
+                questionText: 'In a Binary Search Tree (BST), where are smaller values stored relative to the root?',
+                options: ['Right subtree', 'Left subtree', 'Randomly', 'At the root'],
+                correctOptionIndex: 1,
+                explanation: 'BST property: all values in the left subtree are less than the root, and all values in the right subtree are greater.',
+                order: 1
+            },
+            {
+                topicId: 'trees', type: 'quiz',
+                questionText: 'Which tree traversal visits nodes in Left → Root → Right order?',
+                options: ['Pre-order', 'Post-order', 'In-order', 'Level-order'],
+                correctOptionIndex: 2,
+                explanation: 'In-order traversal (Left → Root → Right) visits nodes in sorted order for a BST.',
+                order: 2
+            },
+            {
+                topicId: 'trees', type: 'quiz',
+                questionText: 'What is the height of a balanced binary tree with n nodes?',
+                options: ['O(n)', 'O(n²)', 'O(log n)', 'O(1)'],
+                correctOptionIndex: 2,
+                explanation: 'A balanced binary tree distributes nodes evenly, so its height is O(log n).',
+                order: 3
+            },
+            {
+                topicId: 'trees', type: 'quiz',
+                questionText: 'A node with no children in a tree is called:',
+                options: ['Root', 'Parent', 'Leaf', 'Branch'],
+                correctOptionIndex: 2,
+                explanation: 'A leaf node (or external node) has no children. The root is the topmost node.',
+                order: 4
+            },
+            {
+                topicId: 'arrays', type: 'coding',
+                questionText: 'Given an empty function `getArray()`, write code to return an array containing the numbers 1, 2, and 3.',
+                starterCode: 'function getArray() {\n  // Your code here\n}',
+                constraints: 'Return exactly [1, 2, 3]',
+                testCases: [
+                    { input: 'getArray()', output: '[1,2,3]' }
+                ],
+                explanation: 'In JavaScript, you can create and return an array using square brackets: return [1, 2, 3];',
+                order: 3
+            },
+            {
+                topicId: 'arrays', type: 'coding',
+                questionText: 'Array Sum\nWrite a function that returns the sum of all elements in the given array `arr`.',
+                starterCode: 'function sumArray(arr) {\n  let sum = 0;\n  // Your code here\n  \n  return sum;\n}',
+                constraints: 'The array will contain at least 1 element.',
+                testCases: [
+                    { input: '[1, 2, 3]', output: '6' },
+                    { input: '[10, -2, 5]', output: '13' }
+                ],
+                explanation: 'A simple for loop can iterate through the array and add each element to the `sum` variable.',
+                order: 4
+            }
+        ]);
+
+        // DSA Assignments
+        await Assignment.create([
+            {
+                courseId: 'dsa',
+                title: 'Array Manipulation',
+                description: 'Implement a function to find the maximum subarray sum using Kadane\'s algorithm.',
+                deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
+            },
+            {
+                courseId: 'dsa',
+                title: 'Linked List Reversal',
+                description: 'Write a program to reverse a singly linked list both iteratively and recursively.',
+                deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
+            }
+        ]);
+
+        // ─── 2. OOP Course ───────────────────────────────────────────
         await Course.create({
             courseId: 'oop',
             title: 'Object Oriented Programming',
-            description: 'OOP principles and design patterns',
+            description: 'Master OOP principles: encapsulation, inheritance, polymorphism & abstraction',
             icon: '🎯',
             color: '#F59E0B'
         });
@@ -367,44 +431,183 @@ app.post('/api/seed', async (req, res) => {
             { id: 'inheritance', name: 'Inheritance', order: 2 },
             { id: 'polymorphism', name: 'Polymorphism', order: 3 },
         ];
-
         for (const t of oopTopics) {
             await Topic.create({ _id: t.id, courseId: 'oop', name: t.name, order: t.order });
         }
 
         await Question.create([
             {
-                topicId: 'classes-objects',
+                topicId: 'classes-objects', type: 'quiz',
                 questionText: 'Which of the following is a blueprint for creating objects?',
                 options: ['Method', 'Class', 'Variable', 'Interface'],
                 correctOptionIndex: 1,
-                explanation: 'A class defines the properties and behaviors that objects created from it will have.',
+                explanation: 'A class defines the attributes and behaviors that its objects will have.',
                 order: 1
+            },
+            {
+                topicId: 'classes-objects', type: 'quiz',
+                questionText: 'What is encapsulation in OOP?',
+                options: ['Hiding implementation details within a class', 'Creating multiple classes', 'Inheriting from a parent class', 'Using the same method name with different parameters'],
+                correctOptionIndex: 0,
+                explanation: 'Encapsulation bundles data and methods together and restricts direct access to internal state.',
+                order: 2
+            },
+            {
+                topicId: 'inheritance', type: 'quiz',
+                questionText: 'Which keyword is used to inherit a class in Java?',
+                options: ['implements', 'extends', 'inherits', 'super'],
+                correctOptionIndex: 1,
+                explanation: 'In Java, the "extends" keyword allows a child class to inherit from a parent class.',
+                order: 1
+            },
+            {
+                topicId: 'inheritance', type: 'quiz',
+                questionText: 'What is the type of inheritance where a class inherits from more than one class?',
+                options: ['Single', 'Multilevel', 'Hierarchical', 'Multiple'],
+                correctOptionIndex: 3,
+                explanation: 'Multiple inheritance allows a class to inherit from more than one parent class (supported in C++, not directly in Java).',
+                order: 2
+            },
+            {
+                topicId: 'polymorphism', type: 'quiz',
+                questionText: 'Method overriding is an example of:',
+                options: ['Compile-time polymorphism', 'Runtime polymorphism', 'Encapsulation', 'Abstraction'],
+                correctOptionIndex: 1,
+                explanation: 'Method overriding is resolved at runtime based on the actual object type — this is runtime (dynamic) polymorphism.',
+                order: 1
+            },
+            {
+                topicId: 'polymorphism', type: 'quiz',
+                questionText: 'Method overloading is also known as:',
+                options: ['Runtime polymorphism', 'Dynamic binding', 'Compile-time polymorphism', 'Late binding'],
+                correctOptionIndex: 2,
+                explanation: 'Method overloading is resolved at compile time based on the method signature — this is compile-time (static) polymorphism.',
+                order: 2
+            },
+            {
+                topicId: 'classes-objects', type: 'coding',
+                questionText: 'Design a simple Class\nCreate a class named "Car" with a method "startEngine" that returns the string "Engine started".',
+                starterCode: 'class Car {\n  // Define startEngine method here\n}',
+                constraints: 'Method name must be exactly "startEngine"',
+                testCases: [
+                    { input: 'const myCar = new Car(); myCar.startEngine()', output: '"Engine started"' }
+                ],
+                explanation: 'Classes encapsulate data and behavior. The class keyword is used to define a class with its methods.',
+                order: 3
             }
         ]);
 
-        // 3. C Programming Course
+        await Assignment.create([
+            {
+                courseId: 'oop',
+                title: 'Design a Bank Account Class',
+                description: 'Create a BankAccount class with deposit, withdraw, and balance methods. Implement encapsulation properly.',
+                deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
+            }
+        ]);
+
+        // ─── 3. C Programming Course ─────────────────────────────────
         await Course.create({
             courseId: 'c',
             title: 'C Programming',
-            description: 'Master the fundamentals of C',
+            description: 'Master the fundamentals of C: pointers, memory, and file I/O',
             icon: '⚡',
             color: '#3B82F6'
         });
 
-        await Topic.create({ _id: 'c-basics', courseId: 'c', name: 'Basics & Syntax', order: 1 });
+        const cTopics = [
+            { id: 'c-basics', name: 'Basics & Syntax', order: 1 },
+            { id: 'c-pointers', name: 'Pointers & Memory', order: 2 },
+            { id: 'c-functions', name: 'Functions', order: 3 },
+        ];
+        for (const t of cTopics) {
+            await Topic.create({ _id: t.id, courseId: 'c', name: t.name, order: t.order });
+        }
+
         await Question.create([
             {
-                topicId: 'c-basics',
+                topicId: 'c-basics', type: 'quiz',
                 questionText: 'Which function is used to print text in C?',
                 options: ['print()', 'echo()', 'printf()', 'System.out.println()'],
                 correctOptionIndex: 2,
-                explanation: 'printf() is the standard output function in C.',
+                explanation: 'printf() is the standard output function in C, defined in <stdio.h>.',
                 order: 1
+            },
+            {
+                topicId: 'c-basics', type: 'quiz',
+                questionText: 'What is the correct way to declare an integer variable in C?',
+                options: ['integer x;', 'int x;', 'var x;', 'x = int;'],
+                correctOptionIndex: 1,
+                explanation: 'In C, "int" is the keyword for declaring integer variables.',
+                order: 2
+            },
+            {
+                topicId: 'c-basics', type: 'quiz',
+                questionText: 'Which of these is the entry point of a C program?',
+                options: ['start()', 'begin()', 'main()', 'run()'],
+                correctOptionIndex: 2,
+                explanation: 'Every C program must have a main() function — it is where program execution begins.',
+                order: 3
+            },
+            {
+                topicId: 'c-pointers', type: 'quiz',
+                questionText: 'What does the & operator do in C?',
+                options: ['Dereferences a pointer', 'Returns the address of a variable', 'Performs bitwise AND', 'Declares a reference'],
+                correctOptionIndex: 1,
+                explanation: '& is the address-of operator. &x gives the memory address of variable x.',
+                order: 1
+            },
+            {
+                topicId: 'c-pointers', type: 'quiz',
+                questionText: 'What does the * operator do when used with a pointer variable?',
+                options: ['Gets the address', 'Multiplies values', 'Dereferences — accesses value at that address', 'Declares a new pointer'],
+                correctOptionIndex: 2,
+                explanation: 'The * operator dereferences a pointer, giving access to the value stored at the address the pointer holds.',
+                order: 2
+            },
+            {
+                topicId: 'c-functions', type: 'quiz',
+                questionText: 'What is a function prototype in C?',
+                options: ['The function\'s return value', 'A declaration of the function before its definition', 'The function body', 'A global variable'],
+                correctOptionIndex: 1,
+                explanation: 'A function prototype tells the compiler the function\'s name, return type, and parameters before the actual definition.',
+                order: 1
+            },
+            {
+                topicId: 'c-functions', type: 'quiz',
+                questionText: 'Which storage class makes a variable retain its value between function calls?',
+                options: ['auto', 'extern', 'static', 'register'],
+                correctOptionIndex: 2,
+                explanation: 'A "static" local variable retains its value across multiple calls to the function.',
+                order: 2
+            },
+            {
+                topicId: 'c-pointers', type: 'coding',
+                questionText: 'Pointer Swap\nWrite a function swap(int *a, int *b) that swaps the values of two integers using pointers.',
+                starterCode: 'void swap(int *a, int *b) {\n  // Your code here\n}',
+                constraints: 'Do not use any global variables.',
+                testCases: [
+                    { input: 'int x = 5, y = 10; swap(&x, &y); printf("%d %d", x, y);', output: '10 5' }
+                ],
+                explanation: 'You need to dereference the pointers using the * operator to access and swap the actual values stored at those memory addresses.',
+                order: 3
             }
         ]);
 
-        res.json({ message: '✅ Database seeded successfully with multi-course data!' });
+        await Assignment.create([
+            {
+                courseId: 'c',
+                title: 'Pointer Arithmetic',
+                description: 'Write a C program that demonstrates pointer arithmetic by traversing an array using pointers.',
+                deadline: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
+                maxScore: 100,
+                createdBy: 'instructor'
+            }
+        ]);
+
+        res.json({ message: '✅ Database seeded with DSA, OOP, and C Programming courses!' });
     } catch (err) {
         console.error('❌ Seeding Error:', err);
         res.status(500).json({ error: err.message });
@@ -412,6 +615,7 @@ app.post('/api/seed', async (req, res) => {
 });
 
 // ── Gemini Chatbot Endpoint ──────────────────────────────
+
 
 app.post('/api/chatbot', async (req, res) => {
     const { contents } = req.body;

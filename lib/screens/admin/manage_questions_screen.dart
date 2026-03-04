@@ -306,7 +306,7 @@ class _CourseTopicsViewState extends State<_CourseTopicsView>
             onPressed: _addTopic,
             icon: const Icon(Icons.add_rounded, size: 20),
             label: Text(
-              '+ Add New Topic to ${widget.course.label}',
+              'Add New Topic to ${widget.course.label}',
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             ),
             style: ElevatedButton.styleFrom(

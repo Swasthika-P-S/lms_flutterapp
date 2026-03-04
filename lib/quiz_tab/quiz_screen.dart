@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:learnhub/models/question_model.dart';
 import 'package:learnhub/services/mongo_service.dart';
-import 'package:learnhub/providers/firebase_auth_provider.dart';
 import 'package:learnhub/quiz_tab/models.dart';
 import 'package:learnhub/home_tab/utils/theme.dart';
-import 'package:learnhub/services/data_seeder.dart';
 import 'package:learnhub/quiz_tab/quiz_review_screen.dart';
-import 'package:code_text_field/code_text_field.dart';
-import 'package:highlight/languages/javascript.dart';
-import 'package:flutter_highlight/themes/monokai-sublime.dart';
 
 class QuizScreen extends StatefulWidget {
   final Topic topic;
@@ -29,16 +23,13 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _codeController = TextEditingController();
   
   List<QuestionModel> _questions = [];
   bool _isLoading = true;
   int _currentIndex = 0;
   int _score = 0;
   Map<int, int> _selectedAnswers = {}; // questionIndex -> selectedOptionIndex
-  Map<int, bool> _codingCompleted = {}; // questionIndex -> passedAllTestCases
-  Map<int, String?> _codeResults = {}; // questionIndex -> manual error or message
-  
-  CodeController? _codeController;
   bool _isFinished = false;
   String? _errorMessage;
 
@@ -50,8 +41,8 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   void dispose() {
-    _codeController?.dispose();
     _pageController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
@@ -78,7 +69,9 @@ class _QuizScreenState extends State<QuizScreen> {
                 ? 'No coding challenges available for this topic yet.' 
                 : 'No quiz questions available for this topic yet.';
           } else {
-            _initCodeController();
+            if (_questions.isNotEmpty && _questions[0].type == 'coding') {
+              _codeController.text = _questions[0].starterCode ?? '';
+            }
           }
         });
       }
@@ -92,20 +85,6 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  void _initCodeController() {
-    if (_questions.isEmpty || _currentIndex >= _questions.length) return;
-    final q = _questions[_currentIndex];
-    
-    if (q.type == 'coding') {
-      _codeController?.dispose();
-      _codeController = CodeController(
-        text: q.starterCode ?? '// Write your code here\n',
-        language: javascript,
-      );
-    } else {
-      _codeController = null;
-    }
-  }
 
   void _handleOptionSelect(int optionIndex) {
     if (_isFinished) return;
@@ -120,6 +99,15 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _nextPage() {
+    if (_questions[_currentIndex].type == 'coding') {
+      if (_codeController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please write your solution before proceeding!'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+    }
+
     if (_currentIndex < _questions.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
@@ -130,54 +118,32 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  void _runCode() {
-    final q = _questions[_currentIndex];
-    final code = _codeController?.text ?? '';
-    
-    // In a real app, you'd send code to a backend or use a JS island.
-    // For this MVP, we'll simulate output checking.
-    // We'll look for a comment like // output: <result> or just mark as success for demonstration
-    // OR, better yet, we'll do literal string matching for very simple cases if it's a "solve(n)" pattern
-    
-    setState(() {
-      // Mocking execution: If the code is not empty, we "pass" the test cases for now.
-      // In a real scenario, this would involve a sandboxed execution environment.
-      if (code.trim().length > (q.starterCode?.trim().length ?? 0) + 5) {
-        _codingCompleted[_currentIndex] = true;
-        _codeResults[_currentIndex] = "✅ All test cases passed!";
-        
-        Future.delayed(const Duration(seconds: 1), () {
-          _nextPage();
-        });
-      } else {
-        _codeResults[_currentIndex] = "❌ Tests failed. Please check your logic.";
-      }
-    });
-  }
-
   void _finishQuiz() {
     int scoreCount = 0;
     for (int i = 0; i < _questions.length; i++) {
       final q = _questions[i];
-      if (q.type == 'quiz') {
-        if (_selectedAnswers[i] == q.correctOptionIndex) {
-          scoreCount++;
-        }
-      } else {
-        if (_codingCompleted[i] == true) {
-          scoreCount++;
-        }
+      if (_selectedAnswers[i] == q.correctOptionIndex) {
+        scoreCount++;
       }
     }
     
-    final percentage = ((scoreCount / _questions.length) * 100).toInt();
+    final percentage = (_questions.isEmpty ? 0 : (scoreCount / _questions.length) * 100).toInt();
     
-    setState(() {
-      _score = percentage;
-      _isFinished = true;
-    });
-
     MongoService.saveQuizResults(widget.topic.id, _selectedAnswers);
+
+    // Navigate to detailed report
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuizReviewScreen(
+          questions: _questions,
+          userAnswers: _selectedAnswers,
+          course: widget.course,
+          topic: widget.topic,
+          score: percentage,
+        ),
+      ),
+    );
   }
 
   @override
@@ -201,10 +167,6 @@ class _QuizScreenState extends State<QuizScreen> {
       );
     }
 
-    if (_isFinished) {
-      return _buildResultScreen(isDark);
-    }
-
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0E27) : Colors.grey[50],
       body: SafeArea(
@@ -219,7 +181,9 @@ class _QuizScreenState extends State<QuizScreen> {
                 onPageChanged: (index) {
                   setState(() {
                     _currentIndex = index;
-                    _initCodeController();
+                    if (_questions[index].type == 'coding') {
+                      _codeController.text = _questions[index].starterCode ?? '';
+                    }
                   });
                 },
                 itemCount: _questions.length,
@@ -281,6 +245,9 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildQuestionCard(QuestionModel question, bool isDark) {
+    if (question.type == 'coding') {
+      return _buildCodingCard(question, isDark);
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -291,99 +258,172 @@ class _QuizScreenState extends State<QuizScreen> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
           ),
           const SizedBox(height: 20),
-          
-          if (question.type == 'coding') ...[
-            if (question.constraints != null) ...[
-              Text('Constraints:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange[700])),
-              Text(question.constraints!, style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
-              const SizedBox(height: 12),
-            ],
-            
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Column(
-                children: [
-                  CodeField(
-                    controller: _codeController!,
-                    textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_codeResults[_currentIndex] ?? "Ready to run...", 
-                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-                        ElevatedButton.icon(
-                          onPressed: _runCode,
-                          icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                          label: const Text('Run Code'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: widget.course.gradientColors[0],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Test Cases:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white70 : Colors.black54)),
-            const SizedBox(height: 8),
-            ...question.testCases.map((tc) => _buildTestCaseRow(tc, isDark)).toList(),
-          ] else ...[
-            if (question.codeSnippet != null) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: Text(
-                  question.codeSnippet!,
-                  style: const TextStyle(color: Color(0xFFD4D4D4), fontFamily: 'monospace', fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 30),
-            ],
-            ...List.generate(
-              question.options.length,
-              (index) => _buildOptionTile(index, question.options[index], isDark),
-            ),
-          ],
+          ...List.generate(
+            question.options.length,
+            (index) => _buildOptionTile(index, question.options[index], isDark),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTestCaseRow(TestCase tc, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[200],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
+  Widget _buildCodingCard(QuestionModel question, bool isDark) {
+    final accent = const Color(0xFF00D4FF);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle_outline, size: 16, color: Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(child: Text('Input: ${tc.input}', style: const TextStyle(fontSize: 12))),
-          Text('Expected: ${tc.output}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          // Problem badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accent.withOpacity(0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.code_rounded, size: 14, color: accent),
+                const SizedBox(width: 6),
+                Text('Coding Challenge', style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Problem description
+          Text(
+            question.questionText,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, height: 1.4),
+          ),
+          if (question.constraints != null && question.constraints!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 14, color: Colors.orange),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Constraints: ${question.constraints}', style: const TextStyle(fontSize: 12, color: Colors.orange))),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          // Starter code block
+          if (question.starterCode != null && question.starterCode!.isNotEmpty) ...[
+            Text('Starter Code', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.grey[300] : Colors.grey[700])),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E2E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: accent.withOpacity(0.3)),
+              ),
+              child: Text(
+                question.starterCode!,
+                style: const TextStyle(color: Color(0xFF00D4FF), fontFamily: 'monospace', fontSize: 13, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          // User code input
+          Text('Your Solution', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.grey[300] : Colors.grey[700])),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
+            ),
+            child: TextField(
+              controller: _codeController,
+              maxLines: null,
+              minLines: 8,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                hintText: 'Write your code here...',
+                hintStyle: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Test cases
+          if (question.testCases.isNotEmpty) ...[
+            Text('Test Cases', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.grey[300] : Colors.grey[700])),
+            const SizedBox(height: 8),
+            ...question.testCases.map((tc) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.04) : Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Input: ${tc.input}', style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87, fontFamily: 'monospace')),
+                        const SizedBox(height: 4),
+                        Text('Output: ${tc.output}', style: TextStyle(fontSize: 12, color: Colors.green[400], fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )).toList(),
+            const SizedBox(height: 16),
+          ],
+          // Expected output hint
+          if (question.explanation != null && question.explanation!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.lightbulb_outline_rounded, size: 16, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(question.explanation!, style: TextStyle(fontSize: 12, color: isDark ? Colors.blue[200] : Colors.blue[800]))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Next / Finish button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _nextPage,
+              icon: Icon(_currentIndex < _questions.length - 1 ? Icons.arrow_forward_rounded : Icons.check_circle_rounded),
+              label: Text(_currentIndex < _questions.length - 1 ? 'Next Challenge' : 'Finish'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -421,43 +461,5 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildResultScreen(bool isDark) {
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0E27) : Colors.grey[50],
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 100, height: 100,
-                decoration: BoxDecoration(color: _score >= 70 ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2), shape: BoxShape.circle),
-                child: Icon(_score >= 70 ? Icons.emoji_events : Icons.refresh, size: 50, color: _score >= 70 ? Colors.green : Colors.orange),
-              ),
-              const SizedBox(height: 30),
-              Text('Assessment Completed!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-              const SizedBox(height: 10),
-              Text('You scored', style: TextStyle(fontSize: 18, color: isDark ? Colors.grey[400] : Colors.grey[600])),
-              Text('$_score%', style: TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: widget.course.gradientColors[0])),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.course.gradientColors[0],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('Back to Course Detail', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
+

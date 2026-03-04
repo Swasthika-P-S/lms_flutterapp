@@ -24,7 +24,6 @@ class _AdminShellState extends State<AdminShell> {
 
   static const _navItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
-    _NavItem(icon: Icons.code_rounded, label: 'Coding'),
     _NavItem(icon: Icons.quiz_rounded, label: 'Questions'),
     _NavItem(icon: Icons.assignment_rounded, label: 'Assignments'),
     _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
@@ -41,7 +40,6 @@ class _AdminShellState extends State<AdminShell> {
 
     final pages = [
       const AdminDashboardScreen(),
-      const ManageQuestionsScreen(initialType: 'coding'),
       const ManageQuestionsScreen(),
       const AssignmentCourseSelector(isAdmin: true),
       const SettingsScreen(),
@@ -57,7 +55,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   PreferredSizeWidget _buildAppBar(bool isDark, ThemeProvider themeProvider, String adminName) {
-    const titles = ['Dashboard', 'Coding Questions', 'Manage Questions', 'Assignments', 'Settings'];
+    const titles = ['Dashboard', 'Manage Questions', 'Assignments', 'Settings'];
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF0F0F2A) : Colors.white,
       elevation: 0,

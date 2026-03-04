@@ -8,6 +8,7 @@ class QuizReviewScreen extends StatelessWidget {
   final Map<int, int> userAnswers;
   final Course course;
   final Topic topic;
+  final int score; // percentage score
 
   const QuizReviewScreen({
     Key? key,
@@ -15,16 +16,22 @@ class QuizReviewScreen extends StatelessWidget {
     required this.userAnswers,
     required this.course,
     required this.topic,
+    this.score = 0,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final correctCount = questions.where((q) {
+      final idx = questions.indexOf(q);
+      return userAnswers[idx] == q.correctOptionIndex;
+    }).length;
+    final isPassing = score >= 70;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0E27) : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Quiz Review'),
+        title: const Text('Quiz Report'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -36,16 +43,98 @@ class QuizReviewScreen extends StatelessWidget {
         ),
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: questions.length,
-        itemBuilder: (context, index) {
-          final question = questions[index];
-          final userAnswer = userAnswers[index];
-          final isCorrect = userAnswer == question.correctOptionIndex;
-
-          return _buildQuestionReviewCard(question, userAnswer, isCorrect, index, isDark);
-        },
+        children: [
+          // ── Score Summary Card ──────────────────────────────────
+          Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: course.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: course.gradientColors[0].withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  isPassing ? Icons.emoji_events_rounded : Icons.refresh_rounded,
+                  color: Colors.white,
+                  size: 44,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isPassing ? 'Great Job! 🎉' : 'Keep Practicing!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$score%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 52,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$correctCount / ${questions.length} correct',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isPassing ? '✅ Passed' : '❌ Not Passed (need 70%)',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Divider ─────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Detailed Breakdown',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
+          ),
+          // ── Question Cards ───────────────────────────────────────
+          ...List.generate(questions.length, (index) {
+            final question = questions[index];
+            final userAnswer = userAnswers[index];
+            final isCorrect = userAnswer == question.correctOptionIndex;
+            return _buildQuestionReviewCard(question, userAnswer, isCorrect, index, isDark);
+          }),
+        ],
       ),
     );
   }
