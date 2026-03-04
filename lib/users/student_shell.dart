@@ -45,7 +45,6 @@ class _StudentShellState extends State<StudentShell>
     _NavItem(icon: Icons.quiz_rounded, label: 'nav_quizzes'),
     _NavItem(icon: Icons.assignment_rounded, label: 'nav_tasks'),
     _NavItem(icon: Icons.person_rounded, label: 'nav_profile'),
-    _NavItem(icon: Icons.settings_rounded, label: 'nav_settings'),
   ];
 
   @override
@@ -64,7 +63,6 @@ class _StudentShellState extends State<StudentShell>
       const CoursesScreen(),
       const AssignmentCourseSelector(isAdmin: false),
       const StudentProfileScreen(),
-      const SettingsScreen(),
     ];
 
     final bg = isDark ? const Color(0xFF0D0D1A) : const Color(0xFFF0F4FF);
@@ -97,7 +95,6 @@ class _StudentShellState extends State<StudentShell>
       localeProvider.t('nav_quizzes'),
       localeProvider.t('nav_tasks'),
       localeProvider.t('nav_profile'),
-      localeProvider.t('nav_settings'),
     ];
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF13132A) : Colors.white,

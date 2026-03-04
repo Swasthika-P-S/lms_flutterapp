@@ -179,7 +179,7 @@ DSA, C Programming, OOPs, and general software development concepts.
       
       // Call Gemini API directly via HTTP
       final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$_apiKey'
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$_apiKey'
       );
       
       final body = jsonEncode({

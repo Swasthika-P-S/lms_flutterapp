@@ -17,11 +17,15 @@ class ChatbotProvider extends ChangeNotifier {
   }
 
   Future<void> _initializeWithKey() async {
+    // Wait briefly for dotenv to ensure it's loaded if called very early
+    // although main() handles it, this is safer for early provider access
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey != null && apiKey.isNotEmpty) {
       await initialize(apiKey);
     } else {
       print('⚠️ ChatbotProvider: GEMINI_API_KEY not found in .env');
+      _errorMessage = 'AI API key not found in configuration.';
+      notifyListeners();
     }
   }
   

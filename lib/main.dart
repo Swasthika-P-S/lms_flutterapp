@@ -27,6 +27,8 @@ void main() async {
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  print('📝 Environment loaded. GEMINI_API_KEY present: ${dotenv.env['GEMINI_API_KEY']?.isNotEmpty}');
+
   
   // Initialize Firebase
   try {
