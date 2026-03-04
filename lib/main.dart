@@ -19,6 +19,7 @@ import 'providers/firebase_auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/chatbot_provider.dart';
 import 'services/data_seeder.dart';
+import 'services/voice_service.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -55,6 +56,7 @@ class LearnHubApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FirebaseAuthProvider()),
         ChangeNotifierProvider(create: (_) => ChatbotProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceService()),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
         builder: (context, themeProvider, localeProvider, _) {

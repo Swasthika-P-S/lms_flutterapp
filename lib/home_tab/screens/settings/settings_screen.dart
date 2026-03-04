@@ -6,6 +6,7 @@ import '../providers/user_provider.dart';
 import '../auth/login_screen.dart';
 import 'package:learnhub/providers/locale_provider.dart';
 import '../../../../providers/firebase_auth_provider.dart';
+import '../../../../services/voice_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool showBackButton;
@@ -261,6 +262,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: notificationsEnabled,
                   activeColor: const Color(0xFF4ECDC4),
                   onChanged: (v) => setState(() => notificationsEnabled = v),
+                ),
+                const Divider(height: 1, indent: 60),
+                // 🎙️ Voice Search Toggle
+                Consumer<VoiceService>(
+                  builder: (context, voiceService, _) => SwitchListTile(
+                    secondary: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6C63FF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        voiceService.isVoiceEnabled
+                            ? Icons.mic_rounded
+                            : Icons.mic_off_rounded,
+                        color: const Color(0xFF6C63FF),
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'Voice Search',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      voiceService.isVoiceEnabled
+                          ? 'Mic button active in app bar'
+                          : 'Tap to enable voice commands',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    value: voiceService.isVoiceEnabled,
+                    activeColor: const Color(0xFF6C63FF),
+                    onChanged: (_) => voiceService.toggleVoice(),
+                  ),
                 ),
               ],
             ),

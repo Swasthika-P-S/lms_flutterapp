@@ -12,6 +12,8 @@ import '../providers/locale_provider.dart';
 import '../home_tab/screens/providers/theme_provider.dart';
 import '../config/api_keys.dart';
 import '../providers/chatbot_provider.dart';
+import '../services/voice_service.dart';
+import '../services/voice_command_handler.dart';
 
 /// ─────────────────────────────────────────────────────────────────
 ///  STUDENT PORTAL SHELL
@@ -36,6 +38,19 @@ class _StudentShellState extends State<StudentShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatbotProvider>().initialize(ApiKeys.groqApiKey);
     });
+  }
+
+  void _onVoiceButtonTapped() {
+    final voiceService = context.read<VoiceService>();
+    if (voiceService.isListening) {
+      voiceService.stopListening();
+    } else {
+      voiceService.startListening((command) {
+        VoiceCommandHandler.handleCommand(command, context, (tabIndex) {
+          setState(() => _index = tabIndex);
+        });
+      });
+    }
   }
 
   static const _navItems = [
@@ -111,6 +126,26 @@ class _StudentShellState extends State<StudentShell>
         ),
       ),
       actions: [
+        // ── Voice mic button — only shown when Voice Search is enabled ──
+        Consumer<VoiceService>(
+          builder: (context, voiceService, _) {
+            if (!voiceService.isVoiceEnabled) return const SizedBox.shrink();
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _AppBarButton(
+                  icon: voiceService.isListening
+                      ? Icons.mic
+                      : Icons.mic_none_rounded,
+                  onTap: _onVoiceButtonTapped,
+                  isDark: isDark,
+                  activeColor: voiceService.isListening ? Colors.red : null,
+                ),
+                const SizedBox(width: 4),
+              ],
+            );
+          },
+        ),
         _AppBarButton(
           icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
           onTap: themeProvider.toggleTheme,
@@ -291,8 +326,9 @@ class _AppBarButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isDark;
+  final Color? activeColor;
   const _AppBarButton(
-      {required this.icon, required this.onTap, required this.isDark});
+      {required this.icon, required this.onTap, required this.isDark, this.activeColor});
 
   @override
   State<_AppBarButton> createState() => _AppBarButtonState();
@@ -359,7 +395,7 @@ class _AppBarButtonState extends State<_AppBarButton>
           ),
           child: ScaleTransition(
             scale: _scale,
-            child: Icon(widget.icon, color: primary, size: 20),
+            child: Icon(widget.icon, color: widget.activeColor ?? primary, size: 20),
           ),
         ),
       ),
