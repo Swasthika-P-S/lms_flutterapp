@@ -64,12 +64,22 @@ app.get('/ping', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'UP',
-        env: process.env.NODE_ENV,
-        dbStatus: mongoose.connection.readyState
-    });
+app.get('/api/health', async (req, res) => {
+    try {
+        await connectDB();
+        res.json({
+            status: 'UP',
+            env: process.env.NODE_ENV,
+            dbStatus: mongoose.connection.readyState,
+            hasUri: !!process.env.MONGODB_URI
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: 'DOWN',
+            error: err.message,
+            hasUri: !!process.env.MONGODB_URI
+        });
+    }
 });
 
 // ── Course Endpoints ──────────────────────────────────────────
