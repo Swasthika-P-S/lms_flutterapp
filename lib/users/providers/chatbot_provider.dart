@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/chatbot_service.dart';
 
-/// Provider for Gemini AI Chatbot
+/// Provider for Groq AI Chatbot
 class ChatbotProvider extends ChangeNotifier {
   final ChatbotService _chatbotService = ChatbotService();
   

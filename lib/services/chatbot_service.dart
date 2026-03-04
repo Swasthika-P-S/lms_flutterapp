@@ -1,15 +1,15 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Gemini AI chatbot service for LMS study assistance
-/// Uses direct HTTP calls to Gemini API for reliability
+/// Groq AI chatbot service for LMS study assistance
+/// Uses direct HTTP calls to Groq API (OpenAI-compatible)
 class ChatbotService {
   String? _apiKey;
   bool _initialized = false;
   String _currentCourse = 'General';
   
-  // Chat history for context
-  final List<Map<String, dynamic>> _chatHistory = [];
+  // Chat history for context (OpenAI format)
+  final List<Map<String, String>> _chatHistory = [];
   
   /// Initialize the chatbot with API key
   Future<void> initialize(String apiKey) async {
@@ -18,14 +18,14 @@ class ChatbotService {
     _apiKey = apiKey;
     _chatHistory.clear();
     
-    // Add system instruction as first user message
+    // Add system instruction
     _chatHistory.add({
-      'role': 'user',
-      'parts': [{'text': _getSystemPrompt(_currentCourse)}],
+      'role': 'system',
+      'content': _getSystemPrompt(_currentCourse),
     });
     _chatHistory.add({
-      'role': 'model',
-      'parts': [{'text': 'Understood! I\'m LearnBot, your AI study assistant. I\'m ready to help you learn. Ask me anything about your courses!'}],
+      'role': 'assistant',
+      'content': 'Understood! I\'m LearnBot, your AI study assistant. I\'m ready to help you learn. Ask me anything about your courses!',
     });
     
     _initialized = true;
@@ -53,7 +53,19 @@ Examples of what to DECLINE in $course mode:
 - Personal or non-academic questions
 ''' : '''
 
-You are in General mode. You can help with any programming or computer science topic.
+IMPORTANT TOPIC RESTRICTION:
+You are ONLY allowed to help with these three subjects:
+1. Data Structures & Algorithms (DSA)
+2. Object-Oriented Programming (OOPs)
+3. C Programming
+
+If a student asks about ANY topic outside of DSA, OOPs, or C Programming, you MUST:
+1. Politely decline the question
+2. Say: "I can only help with DSA, OOPs, and C Programming. Please ask a question related to one of these subjects."
+3. Do NOT answer the off-topic question at all, even partially
+4. This includes: web development, databases, Python, Java, networking, OS, or any other subject
+
+You are in General mode but STILL restricted to DSA, OOPs, and C topics only.
 ''';
 
     return '''
@@ -136,8 +148,8 @@ When helping with OOPs:
       default:
         return '''
 General Study Assistant Mode.
-You can help with any programming or computer science topic including 
-DSA, C Programming, OOPs, and general software development concepts.
+You can help with questions about DSA, C Programming, and OOPs ONLY.
+Do NOT answer questions about any other subject.
 ''';
     }
   }
@@ -148,12 +160,12 @@ DSA, C Programming, OOPs, and general software development concepts.
     if (_initialized) {
       _chatHistory.clear();
       _chatHistory.add({
-        'role': 'user',
-        'parts': [{'text': _getSystemPrompt(course)}],
+        'role': 'system',
+        'content': _getSystemPrompt(course),
       });
       _chatHistory.add({
-        'role': 'model', 
-        'parts': [{'text': 'Understood! I\'m now focused on $course. Ask me anything!'}],
+        'role': 'assistant',
+        'content': 'Understood! I\'m now focused on $course. Ask me anything!',
       });
       print('🔄 Switched to $course context');
     }
@@ -174,37 +186,42 @@ DSA, C Programming, OOPs, and general software development concepts.
       // Add user message to history
       _chatHistory.add({
         'role': 'user',
-        'parts': [{'text': fullMessage}],
+        'content': fullMessage,
       });
       
-      // Call our backend instead of direct Google API
-      // Since the frontend is likely running on an emulator or local, 
-      // we should use a relative path or the known backend base URL.
-      // For now, I'll use the common pattern found in MongoService.
-      final baseUrl = 'http://10.12.252.182:5000'; // For physical device
-      // final baseUrl = 'http://localhost:5000'; // For Web/iOS
+      // Call Groq API (OpenAI-compatible)
+      final url = Uri.parse(
+        'https://api.groq.com/openai/v1/chat/completions'
+      );
       
-      final url = Uri.parse('$baseUrl/api/chatbot');
+      print('🔑 API Key starts with: ${_apiKey?.substring(0, 10)}... length: ${_apiKey?.length}');
       
       final body = jsonEncode({
-        'contents': _chatHistory,
+        'model': 'llama-3.3-70b-versatile',
+        'messages': _chatHistory,
+        'temperature': 0.7,
+        'top_p': 0.95,
+        'max_tokens': 2048,
       });
       
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
+        },
         body: body,
       );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? 
+        final text = data['choices']?[0]?['message']?['content'] ?? 
             'Sorry, I could not generate a response.';
         
         // Add bot response to history
         _chatHistory.add({
-          'role': 'model',
-          'parts': [{'text': text}],
+          'role': 'assistant',
+          'content': text,
         });
         
         // Keep history manageable (last 20 exchanges)
@@ -221,7 +238,7 @@ DSA, C Programming, OOPs, and general software development concepts.
       } else {
         final errorData = jsonDecode(response.body);
         final errorMsg = errorData['error']?['message'] ?? 'Unknown API error';
-        print('❌ Gemini API error (${response.statusCode}): $errorMsg');
+        print('❌ Groq API error (${response.statusCode}): $errorMsg');
         
         // Remove the failed user message from history
         if (_chatHistory.isNotEmpty && _chatHistory.last['role'] == 'user') {
@@ -326,12 +343,12 @@ Include:
     if (_initialized) {
       _chatHistory.clear();
       _chatHistory.add({
-        'role': 'user',
-        'parts': [{'text': _getSystemPrompt(_currentCourse)}],
+        'role': 'system',
+        'content': _getSystemPrompt(_currentCourse),
       });
       _chatHistory.add({
-        'role': 'model',
-        'parts': [{'text': 'Chat reset! I\'m ready to help you again. Ask me anything!'}],
+        'role': 'assistant',
+        'content': 'Chat reset! I\'m ready to help you again. Ask me anything!',
       });
       print('🔄 Chat session reset');
     }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/chatbot_service.dart';
 
-/// Provider for Gemini AI Chatbot with course-specific context
+/// Provider for Groq AI Chatbot with course-specific context
 class ChatbotProvider extends ChangeNotifier {
   final ChatbotService _chatbotService = ChatbotService();
   
@@ -19,11 +19,11 @@ class ChatbotProvider extends ChangeNotifier {
   Future<void> _initializeWithKey() async {
     // Wait briefly for dotenv to ensure it's loaded if called very early
     // although main() handles it, this is safer for early provider access
-    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    final apiKey = dotenv.env['GROQ_API_KEY'];
     if (apiKey != null && apiKey.isNotEmpty) {
       await initialize(apiKey);
     } else {
-      print('⚠️ ChatbotProvider: GEMINI_API_KEY not found in .env');
+      print('⚠️ ChatbotProvider: GROQ_API_KEY not found in .env');
       _errorMessage = 'AI API key not found in configuration.';
       notifyListeners();
     }

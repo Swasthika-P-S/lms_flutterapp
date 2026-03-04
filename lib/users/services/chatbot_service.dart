@@ -1,50 +1,55 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Gemini AI chatbot service for placement assistance
+/// Groq AI chatbot service for placement assistance
 class ChatbotService {
   String? _apiKey;
   bool _initialized = false;
-  final List<Map<String, dynamic>> _chatHistory = [];
+  
+  // Chat history in OpenAI format
+  final List<Map<String, String>> _chatHistory = [];
   
   /// Initialize the chatbot with API key
   Future<void> initialize(String apiKey) async {
     if (_initialized) return;
     
-    _apiKey = apiKey;
-    _chatHistory.clear();
-    
-    // Add system instruction as first user message
-    _chatHistory.add({
-      'role': 'user',
-      'parts': [{'text': _getSystemPrompt()}],
-    });
-    _chatHistory.add({
-      'role': 'model',
-      'parts': [{'text': 'Understood! I\'m your placement preparation assistant. How can I help you today?'}],
-    });
-    
-    _initialized = true;
-    print('✅ Chatbot initialized successfully');
+    try {
+      _apiKey = apiKey;
+      _chatHistory.clear();
+      
+      // Add system prompt
+      _chatHistory.add({
+        'role': 'system',
+        'content': _getSystemPrompt(),
+      });
+      
+      _initialized = true;
+      print('✅ Chatbot initialized successfully');
+    } catch (e) {
+      print('❌ Chatbot initialization error: $e');
+      rethrow;
+    }
   }
   
   /// Get system prompt for placement assistant
   String _getSystemPrompt() {
     return '''
-You are a helpful AI assistant for a placement preparation portal. You help students prepare for technical interviews in:
-- Data Structures & Algorithms (DSA)
-- Database Management Systems (DBMS)
-- Object-Oriented Programming (OOPs)
-- C++ Programming
-- Java Development
+You are a helpful AI study assistant. You ONLY help students with these three subjects:
+1. Data Structures & Algorithms (DSA)
+2. Object-Oriented Programming (OOPs)
+3. C Programming
+
+STRICT RULE: If a student asks about ANY topic outside of DSA, OOPs, or C Programming, you MUST:
+- Politely decline and say: "I can only help with DSA, OOPs, and C Programming. Please ask a question related to one of these subjects."
+- Do NOT answer the off-topic question at all, even partially
+- This includes: web development, databases, DBMS, Python, Java, networking, OS, or any other subject
 
 Your role is to:
-1. Explain complex concepts in simple terms
-2. Provide code examples when asked
-3. Help debug code problems
-4. Suggest problem-solving approaches
-5. Give interview tips and best practices
-6. Be encouraging and motivating
+1. Explain DSA, OOPs, and C concepts in simple terms
+2. Provide code examples in C or C++ when asked
+3. Help debug C code problems
+4. Suggest problem-solving approaches for DSA
+5. Be encouraging and motivating
 
 Guidelines:
 - Keep explanations concise and clear
@@ -52,15 +57,70 @@ Guidelines:
 - Use bullet points for lists
 - Be patient and supportive
 - If you don't know something, admit it honestly
-- Focus on practical, interview-relevant knowledge
 
 Format your responses in Markdown for better readability.
 ''';
   }
   
+  /// Send a message via Groq API
+  Future<String> _callGroq(String userMessage) async {
+    final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+    
+    final body = jsonEncode({
+      'model': 'llama-3.3-70b-versatile',
+      'messages': _chatHistory,
+      'temperature': 0.7,
+      'top_p': 0.95,
+      'max_tokens': 1024,
+    });
+    
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_apiKey',
+      },
+      body: body,
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final text = data['choices']?[0]?['message']?['content'] ?? 
+          'Sorry, I could not generate a response.';
+      
+      // Add assistant response to history
+      _chatHistory.add({
+        'role': 'assistant',
+        'content': text,
+      });
+      
+      // Keep history manageable
+      if (_chatHistory.length > 42) {
+        final systemPart = _chatHistory.sublist(0, 1);
+        final recentPart = _chatHistory.sublist(_chatHistory.length - 40);
+        _chatHistory.clear();
+        _chatHistory.addAll(systemPart);
+        _chatHistory.addAll(recentPart);
+      }
+      
+      return text;
+    } else {
+      final errorData = jsonDecode(response.body);
+      final errorMsg = errorData['error']?['message'] ?? 'Unknown API error';
+      print('❌ Groq API error (${response.statusCode}): $errorMsg');
+      
+      // Remove the failed user message from history
+      if (_chatHistory.isNotEmpty && _chatHistory.last['role'] == 'user') {
+        _chatHistory.removeLast();
+      }
+      
+      return 'Sorry, I encountered an error. Please try again.';
+    }
+  }
+  
   /// Send a message to the chatbot
   Future<String> sendMessage(String message, {String? context}) async {
-    if (!_initialized) {
+    if (!_initialized || _apiKey == null) {
       throw Exception('Chatbot not initialized. Call initialize() first.');
     }
     
@@ -72,50 +132,18 @@ Format your responses in Markdown for better readability.
       
       _chatHistory.add({
         'role': 'user',
-        'parts': [{'text': fullMessage}],
+        'content': fullMessage,
       });
       
-      final baseUrl = 'http://10.12.252.182:5000'; // For physical device
-      final url = Uri.parse('$baseUrl/api/chatbot');
+      final text = await _callGroq(fullMessage);
+      print('💬 Bot response: ${text.substring(0, text.length > 100 ? 100 : text.length)}...');
+      return text;
       
-      final body = jsonEncode({
-        'contents': _chatHistory,
-      });
-      
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? 
-            'Sorry, I could not generate a response.';
-        
-        _chatHistory.add({
-          'role': 'model',
-          'parts': [{'text': text}],
-        });
-        
-        // Keep history manageable
-        if (_chatHistory.length > 22) {
-          final system = _chatHistory.sublist(0, 2);
-          final recent = _chatHistory.sublist(_chatHistory.length - 20);
-          _chatHistory.clear();
-          _chatHistory.addAll(system);
-          _chatHistory.addAll(recent);
-        }
-        
-        return text;
-      } else {
-        final errorData = jsonDecode(response.body);
-        final errorMsg = errorData['error']?['message'] ?? 'Unknown API error';
-        print('❌ Gemini API error: $errorMsg');
-        return 'Sorry, I couldn\'t process that request. Error: $errorMsg';
-      }
     } catch (e) {
       print('❌ Chatbot error: $e');
+      if (_chatHistory.isNotEmpty && _chatHistory.last['role'] == 'user') {
+        _chatHistory.removeLast();
+      }
       return 'Sorry, I encountered an error. Please try again.';
     }
   }
@@ -203,9 +231,11 @@ Please provide:
   /// Start a new chat session (reset history)
   void resetChat() {
     if (_initialized) {
-      _chat = _model.startChat(history: [
-        Content.text(_getSystemPrompt()),
-      ]);
+      _chatHistory.clear();
+      _chatHistory.add({
+        'role': 'system',
+        'content': _getSystemPrompt(),
+      });
       print('🔄 Chat session reset');
     }
   }

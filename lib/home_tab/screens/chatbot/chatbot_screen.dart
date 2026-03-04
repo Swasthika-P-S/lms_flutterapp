@@ -21,8 +21,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   final FocusNode _focusNode = FocusNode();
   late AnimationController _pulseController;
 
-  // Gemini API Key loaded from .env file
-  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  // Groq API Key loaded from .env file
+  static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
   @override
   void initState() {

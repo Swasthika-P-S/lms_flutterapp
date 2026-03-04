@@ -34,7 +34,7 @@ class _StudentShellState extends State<StudentShell>
     super.initState();
     // Initialize chatbot with API key
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatbotProvider>().initialize(ApiKeys.geminiApiKey);
+      context.read<ChatbotProvider>().initialize(ApiKeys.groqApiKey);
     });
   }
 

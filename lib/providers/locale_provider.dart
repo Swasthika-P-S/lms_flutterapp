@@ -210,7 +210,7 @@ class LocaleProvider extends ChangeNotifier {
 
     // Chatbot
     'ai_assistant': 'AI Placement Assistant',
-    'powered_by_gemini': 'Powered by Gemini',
+    'powered_by_groq': 'Powered by Groq',
     'ask_me_anything': 'Ask me anything...',
     'start_conversation': 'Start a conversation!',
     'chatbot_not_initialized': 'Chatbot not initialized',
@@ -405,7 +405,7 @@ class LocaleProvider extends ChangeNotifier {
 
     // Chatbot
     'ai_assistant': 'AI प्लेसमेंट सहायक',
-    'powered_by_gemini': 'Gemini द्वारा संचालित',
+    'powered_by_groq': 'Groq द्वारा संचालित',
     'ask_me_anything': 'कुछ भी पूछें...',
     'start_conversation': 'बातचीत शुरू करें!',
     'chatbot_not_initialized': 'चैटबॉट शुरू नहीं हुआ',

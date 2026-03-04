@@ -177,7 +177,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
                   ),
                 ),
                 Text(
-                  'Powered by Gemini',
+                  'Powered by Groq',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
