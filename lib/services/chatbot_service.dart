@@ -177,25 +177,17 @@ DSA, C Programming, OOPs, and general software development concepts.
         'parts': [{'text': fullMessage}],
       });
       
-      // Call Gemini API directly via HTTP
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$_apiKey'
-      );
+      // Call our backend instead of direct Google API
+      // Since the frontend is likely running on an emulator or local, 
+      // we should use a relative path or the known backend base URL.
+      // For now, I'll use the common pattern found in MongoService.
+      final baseUrl = 'http://10.12.252.182:5000'; // For physical device
+      // final baseUrl = 'http://localhost:5000'; // For Web/iOS
+      
+      final url = Uri.parse('$baseUrl/api/chatbot');
       
       final body = jsonEncode({
         'contents': _chatHistory,
-        'generationConfig': {
-          'temperature': 0.7,
-          'topK': 40,
-          'topP': 0.95,
-          'maxOutputTokens': 2048,
-        },
-        'safetySettings': [
-          {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_MEDIUM_AND_ABOVE'},
-          {'category': 'HARM_CATEGORY_HATE_SPEECH', 'threshold': 'BLOCK_MEDIUM_AND_ABOVE'},
-          {'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold': 'BLOCK_MEDIUM_AND_ABOVE'},
-          {'category': 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold': 'BLOCK_MEDIUM_AND_ABOVE'},
-        ],
       });
       
       final response = await http.post(

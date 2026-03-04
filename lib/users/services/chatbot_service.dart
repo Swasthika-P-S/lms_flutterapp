@@ -1,44 +1,31 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 /// Gemini AI chatbot service for placement assistance
 class ChatbotService {
-  late final GenerativeModel _model;
-  late final ChatSession _chat;
+  String? _apiKey;
   bool _initialized = false;
+  final List<Map<String, dynamic>> _chatHistory = [];
   
   /// Initialize the chatbot with API key
   Future<void> initialize(String apiKey) async {
     if (_initialized) return;
     
-    try {
-      _model = GenerativeModel(
-        model: 'gemini-1.5-flash-latest',
-        apiKey: apiKey,
-        generationConfig: GenerationConfig(
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        ),
-        safetySettings: [
-          SafetySetting(HarmCategory.harassment, HarmBlockThreshold.medium),
-          SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.medium),
-          SafetySetting(HarmCategory.sexuallyExplicit, HarmBlockThreshold.medium),
-          SafetySetting(HarmCategory.dangerousContent, HarmBlockThreshold.medium),
-        ],
-      );
-      
-      // Start a new chat session with placement-focused system prompt
-      _chat = _model.startChat(history: [
-        Content.text(_getSystemPrompt()),
-      ]);
-      
-      _initialized = true;
-      print('✅ Chatbot initialized successfully');
-    } catch (e) {
-      print('❌ Chatbot initialization error: $e');
-      rethrow;
-    }
+    _apiKey = apiKey;
+    _chatHistory.clear();
+    
+    // Add system instruction as first user message
+    _chatHistory.add({
+      'role': 'user',
+      'parts': [{'text': _getSystemPrompt()}],
+    });
+    _chatHistory.add({
+      'role': 'model',
+      'parts': [{'text': 'Understood! I\'m your placement preparation assistant. How can I help you today?'}],
+    });
+    
+    _initialized = true;
+    print('✅ Chatbot initialized successfully');
   }
   
   /// Get system prompt for placement assistant
@@ -78,18 +65,55 @@ Format your responses in Markdown for better readability.
     }
     
     try {
-      // Add context if provided (e.g., current topic, problem details)
       String fullMessage = message;
       if (context != null && context.isNotEmpty) {
         fullMessage = 'Context: $context\n\nQuestion: $message';
       }
       
-      final response = await _chat.sendMessage(Content.text(fullMessage));
-      final text = response.text ?? 'Sorry, I could not generate a response.';
+      _chatHistory.add({
+        'role': 'user',
+        'parts': [{'text': fullMessage}],
+      });
       
-      print('💬 Bot response: ${text.substring(0, text.length > 100 ? 100 : text.length)}...');
-      return text;
+      final baseUrl = 'http://10.12.252.182:5000'; // For physical device
+      final url = Uri.parse('$baseUrl/api/chatbot');
       
+      final body = jsonEncode({
+        'contents': _chatHistory,
+      });
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? 
+            'Sorry, I could not generate a response.';
+        
+        _chatHistory.add({
+          'role': 'model',
+          'parts': [{'text': text}],
+        });
+        
+        // Keep history manageable
+        if (_chatHistory.length > 22) {
+          final system = _chatHistory.sublist(0, 2);
+          final recent = _chatHistory.sublist(_chatHistory.length - 20);
+          _chatHistory.clear();
+          _chatHistory.addAll(system);
+          _chatHistory.addAll(recent);
+        }
+        
+        return text;
+      } else {
+        final errorData = jsonDecode(response.body);
+        final errorMsg = errorData['error']?['message'] ?? 'Unknown API error';
+        print('❌ Gemini API error: $errorMsg');
+        return 'Sorry, I couldn\'t process that request. Error: $errorMsg';
+      }
     } catch (e) {
       print('❌ Chatbot error: $e');
       return 'Sorry, I encountered an error. Please try again.';

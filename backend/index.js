@@ -11,9 +11,22 @@ const Submission = require('./models/Submission');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Gemini AI Initialization
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash-latest',
+    generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+    }
+});
 
 app.use(cors());
 app.use(express.json());
@@ -395,6 +408,46 @@ app.post('/api/seed', async (req, res) => {
     } catch (err) {
         console.error('❌ Seeding Error:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ── Gemini Chatbot Endpoint ──────────────────────────────
+
+app.post('/api/chatbot', async (req, res) => {
+    const { contents } = req.body;
+
+    if (!contents || !Array.isArray(contents)) {
+        return res.status(400).json({ error: 'Invalid contents format' });
+    }
+
+    try {
+        console.log(`🤖 Gemini Request: ${contents.length} messages`);
+
+        const result = await model.generateContent({
+            contents: contents,
+        });
+
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({
+            candidates: [
+                {
+                    content: {
+                        parts: [
+                            { text: text }
+                        ]
+                    }
+                }
+            ]
+        });
+    } catch (err) {
+        console.error('❌ Gemini API Error:', err);
+        res.status(500).json({
+            error: {
+                message: err.message || 'Error generating content from Gemini'
+            }
+        });
     }
 });
 
