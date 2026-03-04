@@ -12,9 +12,8 @@ class ChatbotWidget extends StatefulWidget {
   State<ChatbotWidget> createState() => _ChatbotWidgetState();
 }
 
-class _ChatbotWidgetState extends State<ChatbotWidget> 
+class _ChatbotWidgetState extends State<ChatbotWidget>
     with SingleTickerProviderStateMixin {
-  bool _isExpanded = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   final TextEditingController _messageController = TextEditingController();
@@ -42,14 +41,13 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   }
 
   void _toggleChat() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    });
+    final provider = Provider.of<ChatbotProvider>(context, listen: false);
+    provider.toggleChat();
+    if (provider.isChatOpen) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   void _sendMessage() {
@@ -75,45 +73,68 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
-    return Stack(
-      children: [
-        // Expanded chat window
-        if (_isExpanded)
-          Positioned(
-            right: 16,
-            bottom: 180, // Moved up to stay above the button
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              alignment: Alignment.bottomRight,
-              child: _buildChatWindow(isDarkMode),
+
+    return Consumer<ChatbotProvider>(
+      builder: (context, chatbotProvider, _) {
+        // Defer animation + scroll changes to after the frame — never call
+        // AnimationController methods directly inside build() as that
+        // schedules a setState which triggers another rebuild (infinite loop).
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (chatbotProvider.isChatOpen && !_animationController.isCompleted) {
+            _animationController.forward();
+          } else if (!chatbotProvider.isChatOpen && !_animationController.isDismissed) {
+            _animationController.reverse();
+          }
+          // Auto-scroll to latest message
+          if (chatbotProvider.isChatOpen && _scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+
+        return Stack(
+          children: [
+            if (chatbotProvider.isChatOpen)
+              Positioned(
+                right: 16,
+                bottom: 180,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  alignment: Alignment.bottomRight,
+                  child: _buildChatWindow(isDarkMode),
+                ),
+              ),
+            Positioned(
+              right: 16,
+              bottom: 110,
+              child: _buildFloatingButton(isDarkMode),
             ),
-          ),
-        
-        // Floating action button
-        Positioned(
-          right: 16,
-          bottom: 110, // Moved up to clear the bottom nav bar (80px)
-          child: _buildFloatingButton(isDarkMode),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildFloatingButton(bool isDarkMode) {
-    return GestureDetector(
-      onTap: _toggleChat,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Icon(
-          _isExpanded ? Icons.close_rounded : Icons.smart_toy_rounded,
-          color: Colors.white,
-          size: 28,
+    return Consumer<ChatbotProvider>(
+      builder: (context, provider, _) => GestureDetector(
+        onTap: _toggleChat,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Icon(
+            provider.isChatOpen ? Icons.close_rounded : Icons.smart_toy_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
         ),
       ),
     );

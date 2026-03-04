@@ -11,6 +11,9 @@ class ChatbotProvider extends ChangeNotifier {
   bool _isInitialized = false;
   String? _errorMessage;
   String _selectedCourse = 'General';
+  bool _isChatOpen = false;
+
+  bool get isChatOpen => _isChatOpen;
 
   ChatbotProvider() {
     _initializeWithKey();
@@ -217,6 +220,24 @@ class ChatbotProvider extends ChangeNotifier {
     }
   }
   
+  /// Toggle chatbot panel open/closed
+  void toggleChat() {
+    _isChatOpen = !_isChatOpen;
+    notifyListeners();
+  }
+
+  /// Open chatbot panel
+  void openChat() {
+    _isChatOpen = true;
+    notifyListeners();
+  }
+
+  /// Voice shortcut: open the chatbot and immediately send a message
+  Future<void> openAndSendMessage(String message) async {
+    openChat();
+    await sendMessage(message);
+  }
+
   /// Clear chat history
   void clearChat() {
     _messages.clear();
