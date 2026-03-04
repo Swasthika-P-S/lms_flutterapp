@@ -18,7 +18,7 @@ class AssignmentDetailScreen extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<FirebaseAuthProvider>();
     final isAdmin = auth.isAdmin;
-    final currentUserId = auth.user?.uid ?? '';
+    final currentUserId = auth.user?.email ?? '';
     
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
