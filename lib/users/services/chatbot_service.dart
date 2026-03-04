@@ -12,7 +12,7 @@ class ChatbotService {
     
     try {
       _model = GenerativeModel(
-        model: 'gemini-pro',
+        model: 'gemini-1.5-flash-latest',
         apiKey: apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.7,
