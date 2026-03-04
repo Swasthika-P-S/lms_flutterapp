@@ -37,10 +37,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// Ensure uploads directory exists
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+// Ensure uploads directory exists (use /tmp for serverless if needed)
+const uploadDir = process.env.VERCEL ? '/tmp' : 'uploads';
+try {
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+} catch (err) {
+    console.warn('⚠️ Could not create upload directory:', err.message);
 }
 
 // Multer Storage Configuration
@@ -64,22 +68,14 @@ app.get('/ping', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', async (req, res) => {
-    try {
-        await connectDB();
-        res.json({
-            status: 'UP',
-            env: process.env.NODE_ENV,
-            dbStatus: mongoose.connection.readyState,
-            hasUri: !!process.env.MONGODB_URI
-        });
-    } catch (err) {
-        res.status(500).json({
-            status: 'DOWN',
-            error: err.message,
-            hasUri: !!process.env.MONGODB_URI
-        });
-    }
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'UP',
+        env: process.env.NODE_ENV,
+        dbStatus: mongoose.connection.readyState,
+        hasUri: !!process.env.MONGODB_URI,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // ── Course Endpoints ──────────────────────────────────────────
